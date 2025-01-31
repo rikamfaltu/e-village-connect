@@ -5,7 +5,7 @@ import {
   CarouselNext,
   CarouselPrevious,
 } from "@/components/ui/carousel";
-import { Share2, WhatsappIcon } from "lucide-react";
+import { Share2 } from "lucide-react";
 
 const images = [
   {
