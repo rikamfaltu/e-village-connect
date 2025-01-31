@@ -2,6 +2,7 @@ import { MessageSquare, Lightbulb, FileText } from "lucide-react";
 import StatisticsCard from "../components/StatisticsCard";
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
+import VillageGallery from "../components/VillageGallery";
 
 const Index = () => {
   return (
@@ -11,11 +12,37 @@ const Index = () => {
       {/* Hero Section */}
       <section className="bg-primary text-white py-16">
         <div className="container mx-auto px-4">
-          <h1 className="text-4xl md:text-5xl font-bold mb-4">Welcome to E-Gram Panchayat</h1>
-          <p className="text-xl mb-8">Digital governance at your fingertips</p>
-          <a href="/register" className="bg-secondary hover:bg-secondary/90 text-white px-6 py-3 rounded-md transition-colors">
+          <h1 className="text-4xl md:text-5xl font-bold mb-4 animate-fade-in">Welcome to E-Gram Panchayat</h1>
+          <p className="text-xl mb-8 animate-fade-in">Digital governance at your fingertips</p>
+          <a href="/register" className="bg-secondary hover:bg-secondary/90 text-white px-6 py-3 rounded-md transition-colors animate-fade-in">
             Get Started
           </a>
+        </div>
+      </section>
+
+      {/* Village Information Section */}
+      <section className="py-16 bg-accent">
+        <div className="container mx-auto px-4">
+          <h2 className="text-3xl font-bold text-center mb-8 animate-fade-in">Our Village</h2>
+          <div className="grid md:grid-cols-2 gap-8 items-center">
+            <div className="space-y-4 animate-fade-in">
+              <p className="text-lg">
+                Our village is a vibrant community committed to sustainable development and preserving our cultural heritage.
+                Through E-Gram Panchayat, we're embracing digital transformation to better serve our residents.
+              </p>
+              <p className="text-lg">
+                We focus on transparent governance, quick resolution of community issues, and maintaining our rich traditions
+                while adapting to modern needs.
+              </p>
+            </div>
+            <div className="rounded-lg overflow-hidden shadow-lg animate-fade-in">
+              <img
+                src="https://images.unsplash.com/photo-1472396961693-142e6e269027"
+                alt="Village scenery"
+                className="w-full h-64 object-cover"
+              />
+            </div>
+          </div>
         </div>
       </section>
 
@@ -76,18 +103,8 @@ const Index = () => {
       {/* Photo Gallery */}
       <section className="py-16 bg-gray-50">
         <div className="container mx-auto px-4">
-          <h2 className="text-3xl font-bold text-center mb-12">Village Gallery</h2>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            {[1, 2, 3, 4].map((i) => (
-              <div key={i} className="aspect-square bg-gray-200 rounded-lg overflow-hidden">
-                <img
-                  src={`/placeholder.svg`}
-                  alt={`Gallery image ${i}`}
-                  className="w-full h-full object-cover"
-                />
-              </div>
-            ))}
-          </div>
+          <h2 className="text-3xl font-bold text-center mb-12 animate-fade-in">Village Gallery</h2>
+          <VillageGallery />
         </div>
       </section>
 
