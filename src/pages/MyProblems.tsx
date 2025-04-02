@@ -6,34 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { SignedIn, SignedOut, RedirectToSignIn, useUser } from "@clerk/clerk-react";
 import { toast } from "sonner";
 
-// Mock data for problems - in a real app, this would come from an API
-const mockProblems = [
-  {
-    id: 1,
-    title: "Water Supply Issue in Sector 4",
-    category: "water",
-    description: "There has been no water supply in our area for the last 3 days.",
-    status: "pending",
-    createdAt: new Date(2023, 10, 15).toISOString(),
-  },
-  {
-    id: 2,
-    title: "Street Light Not Working",
-    category: "electricity",
-    description: "The street light near the main temple has not been working for a week.",
-    status: "in_progress",
-    createdAt: new Date(2023, 10, 12).toISOString(),
-  },
-  {
-    id: 3,
-    title: "Garbage Collection",
-    category: "sanitation",
-    description: "Garbage has not been collected from our area for the past week.",
-    status: "resolved",
-    createdAt: new Date(2023, 10, 5).toISOString(),
-  }
-];
-
+// Define the Problem type to match our mockProblems structure
 interface Problem {
   id: number;
   title: string;
@@ -42,6 +15,34 @@ interface Problem {
   status: "pending" | "in_progress" | "resolved" | "rejected";
   createdAt: string;
 }
+
+// Mock data for problems - in a real app, this would come from an API
+const mockProblems = [
+  {
+    id: 1,
+    title: "Water Supply Issue in Sector 4",
+    category: "water",
+    description: "There has been no water supply in our area for the last 3 days.",
+    status: "pending" as const,
+    createdAt: new Date(2023, 10, 15).toISOString(),
+  },
+  {
+    id: 2,
+    title: "Street Light Not Working",
+    category: "electricity",
+    description: "The street light near the main temple has not been working for a week.",
+    status: "in_progress" as const,
+    createdAt: new Date(2023, 10, 12).toISOString(),
+  },
+  {
+    id: 3,
+    title: "Garbage Collection",
+    category: "sanitation",
+    description: "Garbage has not been collected from our area for the past week.",
+    status: "resolved" as const,
+    createdAt: new Date(2023, 10, 5).toISOString(),
+  }
+];
 
 const MyProblems = () => {
   const [problems, setProblems] = useState<Problem[]>([]);
@@ -59,7 +60,20 @@ const MyProblems = () => {
         
         // Using mock data for now
         setTimeout(() => {
-          setProblems(mockProblems);
+          // Get problems from localStorage if any exist
+          const storedProblems = localStorage.getItem('submittedProblems');
+          let allProblems = [...mockProblems];
+          
+          if (storedProblems) {
+            const parsedProblems = JSON.parse(storedProblems).map((problem: any) => ({
+              ...problem,
+              status: problem.status || "pending" as const,
+              createdAt: problem.createdAt || new Date().toISOString()
+            }));
+            allProblems = [...parsedProblems, ...mockProblems];
+          }
+          
+          setProblems(allProblems);
           setIsLoading(false);
         }, 800);
       } catch (error) {

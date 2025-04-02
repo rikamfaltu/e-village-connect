@@ -4,14 +4,42 @@ import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
-import { SignedIn, SignedOut, RedirectToSignIn } from "@clerk/clerk-react";
+import { SignedIn, SignedOut, RedirectToSignIn, useUser } from "@clerk/clerk-react";
+import { X } from "lucide-react";
 
 const AddProblem = () => {
   const { register, handleSubmit, formState: { errors }, reset } = useForm();
+  const { user } = useUser();
 
   const onSubmit = (data: any) => {
     console.log(data);
-    toast.success("Your problem has been submitted successfully!");
+    
+    // Create a new problem object
+    const newProblem = {
+      id: Date.now(),
+      title: data.title,
+      category: data.category,
+      description: data.description,
+      location: data.location,
+      status: "pending" as const,
+      createdAt: new Date().toISOString(),
+      contactNumber: data.contactNumber || ''
+    };
+    
+    // Get existing problems from localStorage
+    const existingProblems = localStorage.getItem('submittedProblems');
+    const problems = existingProblems ? JSON.parse(existingProblems) : [];
+    
+    // Add new problem and save back to localStorage
+    problems.push(newProblem);
+    localStorage.setItem('submittedProblems', JSON.stringify(problems));
+    
+    // Show success toast with dismiss button
+    toast.success("Your problem has been submitted successfully!", {
+      duration: 5000,
+      closeButton: true
+    });
+    
     reset();
   };
 

@@ -33,7 +33,7 @@ const App = () => {
           <Route path="/my-problems" element={<MyProblems />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
-        <Toaster position="top-right" />
+        <Toaster position="top-right" closeButton richColors />
       </ClerkLoaded>
     </BrowserRouter>
   );
