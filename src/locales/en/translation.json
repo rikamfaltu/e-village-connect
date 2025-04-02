@@ -1,0 +1,30 @@
+
+{
+  "nav": {
+    "home": "Home",
+    "about": "About",
+    "contact": "Contact",
+    "addProblem": "Add Problem",
+    "myProblems": "My Problems",
+    "register": "Register",
+    "login": "Login"
+  },
+  "problems": {
+    "title": "My Problems",
+    "noProblem": "You haven't submitted any problems yet.",
+    "status": "Status",
+    "date": "Date",
+    "category": "Category",
+    "location": "Location",
+    "description": "Description",
+    "pending": "Pending",
+    "inProgress": "In Progress",
+    "resolved": "Resolved",
+    "rejected": "Rejected"
+  },
+  "language": {
+    "english": "English",
+    "hindi": "Hindi",
+    "marathi": "Marathi"
+  }
+}

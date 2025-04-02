@@ -1,0 +1,30 @@
+
+{
+  "nav": {
+    "home": "मुख्यपृष्ठ",
+    "about": "आमच्याबद्दल",
+    "contact": "संपर्क",
+    "addProblem": "समस्या जोडा",
+    "myProblems": "माझ्या समस्या",
+    "register": "नोंदणी",
+    "login": "लॉगिन"
+  },
+  "problems": {
+    "title": "माझ्या समस्या",
+    "noProblem": "आपण अद्याप कोणतीही समस्या सादर केलेली नाही.",
+    "status": "स्थिती",
+    "date": "तारीख",
+    "category": "वर्ग",
+    "location": "स्थान",
+    "description": "वर्णन",
+    "pending": "प्रलंबित",
+    "inProgress": "प्रगतीपथावर",
+    "resolved": "सोडवले",
+    "rejected": "नाकारले"
+  },
+  "language": {
+    "english": "इंग्रजी",
+    "hindi": "हिंदी",
+    "marathi": "मराठी"
+  }
+}
