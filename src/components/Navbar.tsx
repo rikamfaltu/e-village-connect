@@ -1,11 +1,16 @@
 
-import { Menu, X, Home, UserPlus, LogIn, Info, Phone, FileText, ClipboardList } from "lucide-react";
+import { Menu, X, Home, UserPlus, LogIn, Info, Phone, FileText, ClipboardList, Shield } from "lucide-react";
 import { useState } from "react";
 import { Link } from "react-router-dom";
-import { SignedIn, SignedOut, UserButton, SignInButton, SignUpButton } from "@clerk/clerk-react";
+import { SignedIn, SignedOut, UserButton, useUser } from "@clerk/clerk-react";
 
 const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
+  const { user } = useUser();
+  
+  // Admin emails - same as defined in AdminPanel for consistency
+  const adminEmails = ["admin@example.com"];
+  const isAdmin = user && adminEmails.includes(user.primaryEmailAddress?.emailAddress || "");
 
   const navItems = [
     { name: "Home", path: "/", icon: <Home className="w-4 h-4" /> },
@@ -21,6 +26,9 @@ const Navbar = () => {
     signedIn: [
       { name: "Add Problem", path: "/add-problem", icon: <FileText className="w-4 h-4" /> },
       { name: "My Problems", path: "/my-problems", icon: <ClipboardList className="w-4 h-4" /> }
+    ],
+    admin: [
+      { name: "Admin Panel", path: "/admin", icon: <Shield className="w-4 h-4" /> }
     ]
   };
 
@@ -61,6 +69,18 @@ const Navbar = () => {
                   <span>{item.name}</span>
                 </Link>
               ))}
+              
+              {isAdmin && authItems.admin.map((item, index) => (
+                <Link
+                  key={item.name}
+                  to={item.path}
+                  className="flex items-center space-x-1 bg-red-600 px-3 py-1 rounded-md hover:bg-red-700 transition-all duration-300"
+                >
+                  {item.icon}
+                  <span>{item.name}</span>
+                </Link>
+              ))}
+              
               <UserButton afterSignOutUrl="/" />
             </SignedIn>
 
@@ -115,6 +135,19 @@ const Navbar = () => {
                   <span>{item.name}</span>
                 </Link>
               ))}
+              
+              {isAdmin && authItems.admin.map((item) => (
+                <Link
+                  key={item.name}
+                  to={item.path}
+                  className="flex items-center space-x-2 py-2 bg-red-600 px-3 my-2 rounded-md hover:bg-red-700 transition-colors"
+                  onClick={() => setIsOpen(false)}
+                >
+                  {item.icon}
+                  <span>{item.name}</span>
+                </Link>
+              ))}
+              
               <div className="py-2">
                 <UserButton afterSignOutUrl="/" />
               </div>
