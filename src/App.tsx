@@ -8,6 +8,7 @@ import Login from "./pages/Login";
 import About from "./pages/About";
 import Contact from "./pages/Contact";
 import AddProblem from "./pages/AddProblem";
+import MyProblems from "./pages/MyProblems";
 import { SignedIn, SignedOut, SignIn, SignUp, ClerkLoaded, ClerkLoading } from "@clerk/clerk-react";
 import { Toaster } from "sonner";
 
@@ -29,6 +30,7 @@ const App = () => {
           <Route path="/about" element={<About />} />
           <Route path="/contact" element={<Contact />} />
           <Route path="/add-problem" element={<AddProblem />} />
+          <Route path="/my-problems" element={<MyProblems />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
         <Toaster position="top-right" />

@@ -1,5 +1,5 @@
 
-import { Menu, X, Home, UserPlus, LogIn, Info, Phone, Share2, FileText } from "lucide-react";
+import { Menu, X, Home, UserPlus, LogIn, Info, Phone, FileText, ClipboardList } from "lucide-react";
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { SignedIn, SignedOut, UserButton, SignInButton, SignUpButton } from "@clerk/clerk-react";
@@ -19,14 +19,9 @@ const Navbar = () => {
       { name: "Login", path: "/login", icon: <LogIn className="w-4 h-4" /> },
     ],
     signedIn: [
-      { name: "Add Problem", path: "/add-problem", icon: <FileText className="w-4 h-4" /> }
+      { name: "Add Problem", path: "/add-problem", icon: <FileText className="w-4 h-4" /> },
+      { name: "My Problems", path: "/my-problems", icon: <ClipboardList className="w-4 h-4" /> }
     ]
-  };
-
-  const shareOnWhatsApp = () => {
-    const text = "Check out our E-Gram Panchayat website!";
-    const url = window.location.href;
-    window.open(`https://wa.me/?text=${encodeURIComponent(text + " " + url)}`, '_blank');
   };
 
   return (
@@ -82,14 +77,6 @@ const Navbar = () => {
                 </Link>
               ))}
             </SignedOut>
-
-            <button
-              onClick={shareOnWhatsApp}
-              className="flex items-center space-x-1 hover:text-secondary transition-all duration-300 transform hover:-translate-y-1"
-            >
-              <Share2 className="w-4 h-4" />
-              <span>Share</span>
-            </button>
           </div>
 
           {/* Mobile Menu Button */}
@@ -146,14 +133,6 @@ const Navbar = () => {
                 </Link>
               ))}
             </SignedOut>
-
-            <button
-              onClick={shareOnWhatsApp}
-              className="flex items-center space-x-2 py-2 hover:text-secondary transition-colors w-full"
-            >
-              <Share2 className="w-4 h-4" />
-              <span>Share</span>
-            </button>
           </div>
         )}
       </div>
