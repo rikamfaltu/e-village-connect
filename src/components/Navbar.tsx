@@ -1,35 +1,32 @@
 
-import { Menu, X, Home, UserPlus, LogIn, Info, Phone, FileText, Globe } from "lucide-react";
+import { Menu, X, Home, UserPlus, LogIn, Info, Phone, Share2, FileText } from "lucide-react";
 import { useState } from "react";
 import { Link } from "react-router-dom";
-import { SignedIn, SignedOut, UserButton } from "@clerk/clerk-react";
-import { useTranslation } from "react-i18next";
+import { SignedIn, SignedOut, UserButton, SignInButton, SignUpButton } from "@clerk/clerk-react";
 
 const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
-  const { t, i18n } = useTranslation();
-  const [isLangMenuOpen, setIsLangMenuOpen] = useState(false);
-
-  const changeLanguage = (lng: string) => {
-    i18n.changeLanguage(lng);
-    setIsLangMenuOpen(false);
-  };
 
   const navItems = [
-    { name: t("nav.home"), path: "/", icon: <Home className="w-4 h-4" /> },
-    { name: t("nav.about"), path: "/about", icon: <Info className="w-4 h-4" /> },
-    { name: t("nav.contact"), path: "/contact", icon: <Phone className="w-4 h-4" /> },
+    { name: "Home", path: "/", icon: <Home className="w-4 h-4" /> },
+    { name: "About", path: "/about", icon: <Info className="w-4 h-4" /> },
+    { name: "Contact", path: "/contact", icon: <Phone className="w-4 h-4" /> },
   ];
 
   const authItems = {
     signedOut: [
-      { name: t("nav.register"), path: "/register", icon: <UserPlus className="w-4 h-4" /> },
-      { name: t("nav.login"), path: "/login", icon: <LogIn className="w-4 h-4" /> },
+      { name: "Register", path: "/register", icon: <UserPlus className="w-4 h-4" /> },
+      { name: "Login", path: "/login", icon: <LogIn className="w-4 h-4" /> },
     ],
     signedIn: [
-      { name: t("nav.addProblem"), path: "/add-problem", icon: <FileText className="w-4 h-4" /> },
-      { name: t("nav.myProblems"), path: "/my-problems", icon: <FileText className="w-4 h-4" /> }
+      { name: "Add Problem", path: "/add-problem", icon: <FileText className="w-4 h-4" /> }
     ]
+  };
+
+  const shareOnWhatsApp = () => {
+    const text = "Check out our E-Gram Panchayat website!";
+    const url = window.location.href;
+    window.open(`https://wa.me/?text=${encodeURIComponent(text + " " + url)}`, '_blank');
   };
 
   return (
@@ -86,39 +83,13 @@ const Navbar = () => {
               ))}
             </SignedOut>
 
-            {/* Language Selector */}
-            <div className="relative">
-              <button
-                onClick={() => setIsLangMenuOpen(!isLangMenuOpen)}
-                className="flex items-center space-x-1 hover:text-secondary transition-all duration-300"
-              >
-                <Globe className="w-4 h-4" />
-                <span>{t(`language.${i18n.language}`) || t("language.english")}</span>
-              </button>
-              
-              {isLangMenuOpen && (
-                <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-50">
-                  <button
-                    onClick={() => changeLanguage("en")}
-                    className="block w-full text-left px-4 py-2 text-gray-800 hover:bg-gray-100"
-                  >
-                    {t("language.english")}
-                  </button>
-                  <button
-                    onClick={() => changeLanguage("hi")}
-                    className="block w-full text-left px-4 py-2 text-gray-800 hover:bg-gray-100"
-                  >
-                    {t("language.hindi")}
-                  </button>
-                  <button
-                    onClick={() => changeLanguage("mr")}
-                    className="block w-full text-left px-4 py-2 text-gray-800 hover:bg-gray-100"
-                  >
-                    {t("language.marathi")}
-                  </button>
-                </div>
-              )}
-            </div>
+            <button
+              onClick={shareOnWhatsApp}
+              className="flex items-center space-x-1 hover:text-secondary transition-all duration-300 transform hover:-translate-y-1"
+            >
+              <Share2 className="w-4 h-4" />
+              <span>Share</span>
+            </button>
           </div>
 
           {/* Mobile Menu Button */}
@@ -176,30 +147,13 @@ const Navbar = () => {
               ))}
             </SignedOut>
 
-            {/* Mobile Language Selector */}
-            <div className="py-2">
-              <button
-                onClick={() => changeLanguage("en")}
-                className="flex items-center space-x-2 py-1 hover:text-secondary transition-colors w-full text-left"
-              >
-                <Globe className="w-4 h-4" />
-                <span>{t("language.english")}</span>
-              </button>
-              <button
-                onClick={() => changeLanguage("hi")}
-                className="flex items-center space-x-2 py-1 hover:text-secondary transition-colors w-full text-left"
-              >
-                <Globe className="w-4 h-4" />
-                <span>{t("language.hindi")}</span>
-              </button>
-              <button
-                onClick={() => changeLanguage("mr")}
-                className="flex items-center space-x-2 py-1 hover:text-secondary transition-colors w-full text-left"
-              >
-                <Globe className="w-4 h-4" />
-                <span>{t("language.marathi")}</span>
-              </button>
-            </div>
+            <button
+              onClick={shareOnWhatsApp}
+              className="flex items-center space-x-2 py-2 hover:text-secondary transition-colors w-full"
+            >
+              <Share2 className="w-4 h-4" />
+              <span>Share</span>
+            </button>
           </div>
         )}
       </div>

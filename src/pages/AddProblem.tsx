@@ -5,28 +5,14 @@ import { toast } from "sonner";
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
 import { SignedIn, SignedOut, RedirectToSignIn } from "@clerk/clerk-react";
-import { useProblems } from "../context/ProblemContext";
-import { useTranslation } from "react-i18next";
-import { useNavigate } from "react-router-dom";
 
 const AddProblem = () => {
   const { register, handleSubmit, formState: { errors }, reset } = useForm();
-  const { addProblem } = useProblems();
-  const navigate = useNavigate();
-  const { t } = useTranslation();
 
   const onSubmit = (data: any) => {
-    addProblem({
-      title: data.title,
-      category: data.category,
-      location: data.location,
-      description: data.description,
-      urgency: data.urgency
-    });
-    
+    console.log(data);
     toast.success("Your problem has been submitted successfully!");
     reset();
-    navigate("/my-problems");
   };
 
   return (
