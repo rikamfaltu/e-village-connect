@@ -22,7 +22,7 @@ import {
   SheetTitle,
   SheetTrigger,
 } from "@/components/ui/sheet";
-import { Info, CheckCircle, Clock, XCircle } from "lucide-react";
+import { Info, CheckCircle, Clock, XCircle, User, Mail } from "lucide-react";
 
 // Define the Problem type
 interface Problem {
@@ -35,6 +35,9 @@ interface Problem {
   contactNumber?: string;
   location?: string;
   urgency?: string;
+  userId?: string;
+  userEmail?: string;
+  userName?: string;
 }
 
 const AdminPanel = () => {
@@ -69,7 +72,10 @@ const AdminPanel = () => {
               createdAt: new Date(2023, 10, 15).toISOString(),
               contactNumber: "9876543210",
               location: "Sector 4, Block B",
-              urgency: "high"
+              urgency: "high",
+              userId: "user_mock_1",
+              userEmail: "resident1@example.com",
+              userName: "John Resident"
             },
             {
               id: 2,
@@ -80,7 +86,10 @@ const AdminPanel = () => {
               createdAt: new Date(2023, 10, 12).toISOString(),
               contactNumber: "8765432109",
               location: "Main Temple Road",
-              urgency: "medium"
+              urgency: "medium",
+              userId: "user_mock_2",
+              userEmail: "resident2@example.com",
+              userName: "Sarah Villager"
             },
             {
               id: 3,
@@ -91,7 +100,10 @@ const AdminPanel = () => {
               createdAt: new Date(2023, 10, 5).toISOString(),
               contactNumber: "7654321098",
               location: "Park View Society",
-              urgency: "low"
+              urgency: "low",
+              userId: "user_mock_3",
+              userEmail: "resident3@example.com",
+              userName: "Michael Town"
             }
           ];
           
@@ -120,6 +132,10 @@ const AdminPanel = () => {
   }, []);
 
   const handleStatusChange = (id: number, newStatus: Problem["status"]) => {
+    // Find the problem to update
+    const problemToUpdate = problems.find(problem => problem.id === id);
+    if (!problemToUpdate) return;
+    
     const updatedProblems = problems.map(problem => 
       problem.id === id ? { ...problem, status: newStatus } : problem
     );
@@ -136,7 +152,26 @@ const AdminPanel = () => {
       localStorage.setItem('submittedProblems', JSON.stringify(updatedStoredProblems));
     }
     
+    // Show notification to admin
     toast.success(`Problem status updated to ${newStatus}`);
+    
+    // In a real app, this would trigger an email notification
+    // For this demo, we'll simulate it with a console log
+    if (problemToUpdate.userEmail) {
+      console.log(`Email notification sent to ${problemToUpdate.userEmail} about problem status update to ${newStatus}`);
+      
+      // Show a toast to simulate email being sent
+      toast.info(
+        <div className="flex flex-col gap-1">
+          <div className="font-medium">Notification sent to user</div>
+          <div className="text-sm text-gray-500">An email has been sent to {problemToUpdate.userEmail} about this update</div>
+        </div>,
+        {
+          icon: <Mail className="h-5 w-5 text-blue-500" />,
+          duration: 4000
+        }
+      );
+    }
   };
 
   const getStatusBadge = (status: Problem["status"]) => {
@@ -215,6 +250,7 @@ const AdminPanel = () => {
                       <TableHead>ID</TableHead>
                       <TableHead>Title</TableHead>
                       <TableHead>Category</TableHead>
+                      <TableHead>Submitted By</TableHead>
                       <TableHead>Date</TableHead>
                       <TableHead>Status</TableHead>
                       <TableHead>Actions</TableHead>
@@ -226,6 +262,12 @@ const AdminPanel = () => {
                         <TableCell className="font-medium">{problem.id}</TableCell>
                         <TableCell>{problem.title}</TableCell>
                         <TableCell className="capitalize">{problem.category.replace('_', ' ')}</TableCell>
+                        <TableCell>
+                          <div className="flex items-center">
+                            <User className="h-4 w-4 mr-2 text-gray-500" />
+                            <span>{problem.userName || 'Anonymous'}</span>
+                          </div>
+                        </TableCell>
                         <TableCell>{formatDate(problem.createdAt)}</TableCell>
                         <TableCell>{getStatusBadge(problem.status)}</TableCell>
                         <TableCell>
@@ -245,6 +287,16 @@ const AdminPanel = () => {
                                   <div>
                                     <h3 className="text-sm font-medium text-gray-500">Category</h3>
                                     <p className="mt-1 capitalize">{problem.category.replace('_', ' ')}</p>
+                                  </div>
+                                  <div>
+                                    <h3 className="text-sm font-medium text-gray-500">Submitted By</h3>
+                                    <p className="mt-1 flex items-center">
+                                      <User className="h-4 w-4 mr-2 text-gray-500" />
+                                      {problem.userName || 'Anonymous'}
+                                      {problem.userEmail && (
+                                        <span className="ml-2 text-xs text-gray-500">({problem.userEmail})</span>
+                                      )}
+                                    </p>
                                   </div>
                                   <div>
                                     <h3 className="text-sm font-medium text-gray-500">Description</h3>

@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
@@ -14,6 +13,13 @@ interface Problem {
   description: string;
   status: "pending" | "in_progress" | "resolved" | "rejected";
   createdAt: string;
+  userId?: string;
+  userEmail?: string;
+  userName?: string;
+  contactNumber?: string;
+  location?: string;
+  urgency?: string;
+  statusUpdateTime?: string;
 }
 
 // Mock data for problems - in a real app, this would come from an API
@@ -48,6 +54,19 @@ const MyProblems = () => {
   const [problems, setProblems] = useState<Problem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const { user } = useUser();
+  const [lastCheckedTime, setLastCheckedTime] = useState<string | null>(null);
+
+  useEffect(() => {
+    // Load or initialize the last checked time from localStorage
+    const storedLastCheckedTime = localStorage.getItem('lastProblemStatusCheck');
+    if (storedLastCheckedTime) {
+      setLastCheckedTime(storedLastCheckedTime);
+    } else {
+      const currentTime = new Date().toISOString();
+      localStorage.setItem('lastProblemStatusCheck', currentTime);
+      setLastCheckedTime(currentTime);
+    }
+  }, []);
 
   useEffect(() => {
     // Simulate API fetch
@@ -70,7 +89,33 @@ const MyProblems = () => {
               status: problem.status || "pending" as const,
               createdAt: problem.createdAt || new Date().toISOString()
             }));
-            allProblems = [...parsedProblems, ...mockProblems];
+            
+            // Filter to only include problems where userId matches or if no userId is present (for mock data)
+            const userProblems = parsedProblems.filter((p: Problem) => 
+              !p.userId || p.userId === user?.id || p.userEmail === user?.primaryEmailAddress?.emailAddress
+            );
+            
+            allProblems = [...userProblems];
+            
+            // Check for status updates since last check
+            if (lastCheckedTime) {
+              const updatedProblems = allProblems.filter(
+                (p) => p.statusUpdateTime && new Date(p.statusUpdateTime) > new Date(lastCheckedTime)
+              );
+              
+              // Notify user of any status updates
+              updatedProblems.forEach(problem => {
+                toast.info(
+                  `The status of your problem "${problem.title}" has been updated to ${problem.status.replace('_', ' ')}`,
+                  { duration: 5000, closeButton: true }
+                );
+              });
+            }
+            
+            // Update the last checked time
+            const currentTime = new Date().toISOString();
+            localStorage.setItem('lastProblemStatusCheck', currentTime);
+            setLastCheckedTime(currentTime);
           }
           
           setProblems(allProblems);
@@ -86,7 +131,7 @@ const MyProblems = () => {
     if (user) {
       fetchProblems();
     }
-  }, [user]);
+  }, [user, lastCheckedTime]);
 
   const getStatusBadge = (status: Problem["status"]) => {
     switch (status) {

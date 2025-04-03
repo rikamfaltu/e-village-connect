@@ -14,7 +14,7 @@ const AddProblem = () => {
   const onSubmit = (data: any) => {
     console.log(data);
     
-    // Create a new problem object
+    // Create a new problem object with user information
     const newProblem = {
       id: Date.now(),
       title: data.title,
@@ -23,7 +23,12 @@ const AddProblem = () => {
       location: data.location,
       status: "pending" as const,
       createdAt: new Date().toISOString(),
-      contactNumber: data.contactNumber || ''
+      contactNumber: data.contactNumber || '',
+      urgency: data.urgency || 'medium',
+      // Add user information
+      userId: user?.id,
+      userEmail: user?.primaryEmailAddress?.emailAddress,
+      userName: user?.fullName || `${user?.firstName || ''} ${user?.lastName || ''}`.trim() || 'Anonymous User'
     };
     
     // Get existing problems from localStorage
