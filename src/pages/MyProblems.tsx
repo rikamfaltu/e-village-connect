@@ -1,9 +1,11 @@
+
 import { useState, useEffect } from "react";
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
 import { Badge } from "@/components/ui/badge";
 import { SignedIn, SignedOut, RedirectToSignIn, useUser } from "@clerk/clerk-react";
 import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
 
 // Define the Problem type to match our mockProblems structure
 interface Problem {
@@ -31,6 +33,7 @@ const mockProblems = [
     description: "There has been no water supply in our area for the last 3 days.",
     status: "pending" as const,
     createdAt: new Date(2023, 10, 15).toISOString(),
+    statusUpdateTime: new Date(2023, 10, 15).toISOString(),
   },
   {
     id: 2,
@@ -39,6 +42,7 @@ const mockProblems = [
     description: "The street light near the main temple has not been working for a week.",
     status: "in_progress" as const,
     createdAt: new Date(2023, 10, 12).toISOString(),
+    statusUpdateTime: new Date(2023, 10, 12).toISOString(),
   },
   {
     id: 3,
@@ -47,6 +51,7 @@ const mockProblems = [
     description: "Garbage has not been collected from our area for the past week.",
     status: "resolved" as const,
     createdAt: new Date(2023, 10, 5).toISOString(),
+    statusUpdateTime: new Date(2023, 10, 5).toISOString(),
   }
 ];
 
@@ -87,7 +92,8 @@ const MyProblems = () => {
             const parsedProblems = JSON.parse(storedProblems).map((problem: any) => ({
               ...problem,
               status: problem.status || "pending" as const,
-              createdAt: problem.createdAt || new Date().toISOString()
+              createdAt: problem.createdAt || new Date().toISOString(),
+              statusUpdateTime: problem.statusUpdateTime || problem.createdAt || new Date().toISOString()
             }));
             
             // Filter to only include problems where userId matches or if no userId is present (for mock data)
