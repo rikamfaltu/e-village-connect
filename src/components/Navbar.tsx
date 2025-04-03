@@ -28,8 +28,8 @@ const Navbar = () => {
       { name: "Login", path: "/login", icon: <LogIn className="w-4 h-4" /> },
     ],
     signedIn: [
-      { name: "Add Problem", path: "/add-problem", icon: <FileText className="w-4 h-4" />, hideOnAdmin: true },
-      { name: "My Problems", path: "/my-problems", icon: <ClipboardList className="w-4 h-4" />, hideOnAdmin: true }
+      { name: "Add Problem", path: "/add-problem", icon: <FileText className="w-4 h-4" /> },
+      { name: "My Problems", path: "/my-problems", icon: <ClipboardList className="w-4 h-4" /> }
     ],
     admin: [
       { name: "Admin Panel", path: "/admin", icon: <Shield className="w-4 h-4" /> }
@@ -62,20 +62,17 @@ const Navbar = () => {
             ))}
             
             <SignedIn>
-              {authItems.signedIn
-                .filter(item => !(isAdminRoute && item.hideOnAdmin))
-                .map((item, index) => (
-                  <Link
-                    key={item.name}
-                    to={item.path}
-                    className="flex items-center space-x-1 hover:text-secondary transition-all duration-300 transform hover:-translate-y-1"
-                    style={{ animationDelay: `${index * 100}ms` }}
-                  >
-                    {item.icon}
-                    <span>{item.name}</span>
-                  </Link>
-                ))
-              }
+              {!isAdmin && authItems.signedIn.map((item, index) => (
+                <Link
+                  key={item.name}
+                  to={item.path}
+                  className="flex items-center space-x-1 hover:text-secondary transition-all duration-300 transform hover:-translate-y-1"
+                  style={{ animationDelay: `${index * 100}ms` }}
+                >
+                  {item.icon}
+                  <span>{item.name}</span>
+                </Link>
+              ))}
               
               {isAdmin && authItems.admin.map((item, index) => (
                 <Link
@@ -131,20 +128,17 @@ const Navbar = () => {
             ))}
             
             <SignedIn>
-              {authItems.signedIn
-                .filter(item => !(isAdminRoute && item.hideOnAdmin))
-                .map((item) => (
-                  <Link
-                    key={item.name}
-                    to={item.path}
-                    className="flex items-center space-x-2 py-2 hover:text-secondary transition-colors"
-                    onClick={() => setIsOpen(false)}
-                  >
-                    {item.icon}
-                    <span>{item.name}</span>
-                  </Link>
-                ))
-              }
+              {!isAdmin && authItems.signedIn.map((item) => (
+                <Link
+                  key={item.name}
+                  to={item.path}
+                  className="flex items-center space-x-2 py-2 hover:text-secondary transition-colors"
+                  onClick={() => setIsOpen(false)}
+                >
+                  {item.icon}
+                  <span>{item.name}</span>
+                </Link>
+              ))}
               
               {isAdmin && authItems.admin.map((item) => (
                 <Link
