@@ -1,0 +1,46 @@
+
+{
+  "app": {
+    "title": "E-Gram Panchayat",
+    "description": "Digital governance at your fingertips"
+  },
+  "nav": {
+    "home": "Home",
+    "about": "About",
+    "contact": "Contact",
+    "addProblem": "Add Problem",
+    "myProblems": "My Problems",
+    "adminPanel": "Admin Panel",
+    "register": "Register",
+    "login": "Login"
+  },
+  "home": {
+    "welcome": "Welcome to E-Gram Panchayat",
+    "getStarted": "Get Started",
+    "ourVillage": "Our Village",
+    "villageDescription": "Our village is a vibrant community committed to sustainable development and preserving our cultural heritage. Through E-Gram Panchayat, we're embracing digital transformation to better serve our residents.",
+    "villageDescription2": "We focus on transparent governance, quick resolution of community issues, and maintaining our rich traditions while adapting to modern needs.",
+    "villageStats": "Village Statistics",
+    "complaintsRegistered": "Complaints Registered",
+    "suggestionsReceived": "Suggestions Received",
+    "ideasAndPlans": "Ideas & Plans",
+    "howItWorks": "How It Works",
+    "step1": "Register",
+    "step1Description": "Create your account using Aadhar and mobile number",
+    "step2": "Login",
+    "step2Description": "Access your account with username and password",
+    "step3": "File Complaint",
+    "step3Description": "Submit your complaints and track their status",
+    "villageGallery": "Village Gallery"
+  },
+  "footer": {
+    "empowering": "Empowering villages through digital governance",
+    "quickLinks": "Quick Links",
+    "contactInfo": "Contact Info",
+    "allRightsReserved": "All rights reserved"
+  },
+  "language": {
+    "english": "English",
+    "marathi": "मराठी"
+  }
+}
