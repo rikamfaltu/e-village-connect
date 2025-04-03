@@ -13,7 +13,7 @@ const Navbar = () => {
   const isAdminRoute = location.pathname === "/admin";
   
   // Admin emails - same as defined in AdminPanel for consistency
-  const adminEmails = ["admin@example.com"];
+  const adminEmails = ["admin@example.com", "2023bit045@sggs.ac.in"];
   const isAdmin = user && adminEmails.includes(user.primaryEmailAddress?.emailAddress || "");
 
   const navItems = [
