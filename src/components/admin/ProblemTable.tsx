@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Mail, User, CalendarClock, MapPin, Tag, AlertTriangle } from 'lucide-react';
 import {
