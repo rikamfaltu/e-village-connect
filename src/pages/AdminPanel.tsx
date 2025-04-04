@@ -1,10 +1,18 @@
 
 import React, { useState, useEffect } from 'react';
-import { Mail } from 'lucide-react';
+import { Mail, User, CalendarClock, MapPin, Tag } from 'lucide-react';
 import { toast } from 'sonner';
 import { useUser } from '@clerk/clerk-react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
 
@@ -17,6 +25,7 @@ interface Problem {
   location: string;
   status: 'pending' | 'in-progress' | 'resolved' | 'rejected';
   userEmail?: string;
+  userName?: string;
   submittedAt: string;
   statusUpdateTime?: string;
 }
@@ -81,25 +90,73 @@ const AdminPanel = () => {
       localStorage.setItem('submittedProblems', JSON.stringify(updatedStoredProblems));
     }
     
-    // Show notification to admin
-    toast.success(`Problem status updated to ${newStatus}`);
+    // Show notification to admin based on status change
+    if (newStatus === 'resolved') {
+      toast.success("Problem has been marked as resolved");
+    } else if (newStatus === 'in-progress') {
+      toast.info("Problem has been marked as in progress");
+    } else if (newStatus === 'rejected') {
+      toast.error("Problem has been rejected");
+    } else {
+      toast.warning("Problem status updated to pending");
+    }
     
     // In a real app, this would trigger an email notification
-    // For this demo, we'll simulate it with a console log
+    // For this demo, we'll simulate it with a console log and toast
     if (problemToUpdate.userEmail) {
       console.log(`Email notification sent to ${problemToUpdate.userEmail} about problem status update to ${newStatus}`);
+      
+      let messageTitle = "";
+      let messageBody = "";
+      
+      switch(newStatus) {
+        case 'resolved':
+          messageTitle = "Your reported problem has been resolved";
+          messageBody = `We're pleased to inform you that your reported issue "${problemToUpdate.title}" has been successfully resolved.`;
+          break;
+        case 'in-progress':
+          messageTitle = "Your reported problem is being addressed";
+          messageBody = `We wanted to let you know that we're currently working on your reported issue "${problemToUpdate.title}".`;
+          break;
+        case 'rejected':
+          messageTitle = "Update on your reported problem";
+          messageBody = `We regret to inform you that we cannot proceed with your reported issue "${problemToUpdate.title}" at this time.`;
+          break;
+        default:
+          messageTitle = "Your reported problem status has been updated";
+          messageBody = `We're reviewing your reported issue "${problemToUpdate.title}" and will update you soon.`;
+      }
       
       // Show a toast to simulate email being sent
       toast.info(
         <div className="flex flex-col gap-1">
           <div className="font-medium">Notification sent to user</div>
-          <div className="text-sm text-gray-500">An email has been sent to {problemToUpdate.userEmail} about this update</div>
+          <div className="text-sm text-gray-500">
+            <p>To: {problemToUpdate.userEmail}</p>
+            <p>Subject: {messageTitle}</p>
+            <p>Message: {messageBody}</p>
+          </div>
         </div>,
         {
           icon: <Mail className="h-5 w-5 text-blue-500" />,
-          duration: 4000
+          duration: 6000
         }
       );
+    }
+  };
+
+  const getStatusBadgeClass = (status: Problem["status"]) => {
+    switch(status) {
+      case 'pending':
+        return 'bg-yellow-100 text-yellow-800';
+      case 'in-progress':
+        return 'bg-blue-100 text-blue-800';
+      case 'resolved':
+        return 'bg-green-100 text-green-800';
+      case 'rejected':
+        return 'bg-red-100 text-red-800';
+      default:
+        return 'bg-gray-100 text-gray-800';
     }
   };
 
@@ -116,43 +173,68 @@ const AdminPanel = () => {
             <div className="text-gray-500 text-center py-8">No problems submitted yet.</div>
           ) : (
             <div className="overflow-x-auto">
-              <table className="w-full border-collapse">
-                <thead>
-                  <tr className="bg-gray-100">
-                    <th className="border px-4 py-2 text-left">ID</th>
-                    <th className="border px-4 py-2 text-left">Title</th>
-                    <th className="border px-4 py-2 text-left">Category</th>
-                    <th className="border px-4 py-2 text-left">Location</th>
-                    <th className="border px-4 py-2 text-left">Status</th>
-                    <th className="border px-4 py-2 text-left">Submitted By</th>
-                    <th className="border px-4 py-2 text-left">Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Problem Details</TableHead>
+                    <TableHead>Category & Location</TableHead>
+                    <TableHead>Submitted By</TableHead>
+                    <TableHead>Date & Status</TableHead>
+                    <TableHead>Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
                   {problems.map((problem) => (
-                    <tr key={problem.id} className="hover:bg-gray-50">
-                      <td className="border px-4 py-2">{problem.id}</td>
-                      <td className="border px-4 py-2">
-                        <div className="font-medium">{problem.title}</div>
-                        <div className="text-sm text-gray-500">{problem.description.substring(0, 50)}...</div>
-                      </td>
-                      <td className="border px-4 py-2">{problem.category}</td>
-                      <td className="border px-4 py-2">{problem.location}</td>
-                      <td className="border px-4 py-2">
-                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                          problem.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
-                          problem.status === 'in-progress' ? 'bg-blue-100 text-blue-800' :
-                          problem.status === 'resolved' ? 'bg-green-100 text-green-800' :
-                          'bg-red-100 text-red-800'
-                        }`}>
-                          {problem.status}
-                        </span>
-                      </td>
-                      <td className="border px-4 py-2">{problem.userEmail || 'Anonymous'}</td>
-                      <td className="border px-4 py-2">
-                        <div className="flex flex-col gap-1">
+                    <TableRow key={problem.id} className="hover:bg-gray-50">
+                      <TableCell>
+                        <div>
+                          <h3 className="font-medium text-lg">{problem.title}</h3>
+                          <p className="text-gray-600 mt-1">{problem.description}</p>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex flex-col gap-2">
+                          <div className="flex items-center gap-2">
+                            <Tag className="h-4 w-4 text-gray-500" />
+                            <span>{problem.category}</span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <MapPin className="h-4 w-4 text-gray-500" />
+                            <span>{problem.location}</span>
+                          </div>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-2">
+                          <User className="h-5 w-5 text-gray-500" />
+                          <div>
+                            <div className="font-medium">{problem.userEmail || 'Anonymous'}</div>
+                            {problem.userName && <div className="text-sm text-gray-500">{problem.userName}</div>}
+                          </div>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex flex-col gap-2">
+                          <div className="flex items-center gap-2">
+                            <CalendarClock className="h-4 w-4 text-gray-500" />
+                            <span className="text-sm">{new Date(problem.submittedAt).toLocaleString()}</span>
+                          </div>
+                          <div>
+                            <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusBadgeClass(problem.status)}`}>
+                              {problem.status}
+                            </span>
+                          </div>
+                          {problem.statusUpdateTime && (
+                            <div className="text-xs text-gray-500">
+                              Last updated: {new Date(problem.statusUpdateTime).toLocaleString()}
+                            </div>
+                          )}
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <div>
                           <select 
-                            className="border rounded px-2 py-1 text-sm"
+                            className="border rounded px-2 py-1 text-sm w-full mb-2"
                             value={problem.status}
                             onChange={(e) => handleStatusChange(problem.id, e.target.value as Problem["status"])}
                           >
@@ -162,17 +244,18 @@ const AdminPanel = () => {
                             <option value="rejected">Rejected</option>
                           </select>
                           
-                          {problem.statusUpdateTime && (
-                            <div className="text-xs text-gray-500">
-                              Last updated: {new Date(problem.statusUpdateTime).toLocaleString()}
+                          {problem.userEmail && (
+                            <div className="flex items-center text-xs text-blue-600">
+                              <Mail className="h-3 w-3 mr-1" />
+                              <span>Email notifications enabled</span>
                             </div>
                           )}
                         </div>
-                      </td>
-                    </tr>
+                      </TableCell>
+                    </TableRow>
                   ))}
-                </tbody>
-              </table>
+                </TableBody>
+              </Table>
             </div>
           )}
         </div>

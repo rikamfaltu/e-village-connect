@@ -65,6 +65,7 @@ const Navbar = () => {
             ))}
             
             <SignedIn>
+              {/* Only show Add Problem and My Problems links for non-admin users */}
               {!isAdmin && authItems.signedIn.map((item, index) => (
                 <Link
                   key={item.name}
@@ -77,6 +78,7 @@ const Navbar = () => {
                 </Link>
               ))}
               
+              {/* Show Admin Panel link for admin users */}
               {isAdmin && authItems.admin.map((item, index) => (
                 <Link
                   key={item.name}
@@ -136,6 +138,7 @@ const Navbar = () => {
             ))}
             
             <SignedIn>
+              {/* Only show Add Problem and My Problems links for non-admin users in mobile menu */}
               {!isAdmin && authItems.signedIn.map((item) => (
                 <Link
                   key={item.name}
@@ -148,6 +151,7 @@ const Navbar = () => {
                 </Link>
               ))}
               
+              {/* Show Admin Panel link for admin users in mobile menu */}
               {isAdmin && authItems.admin.map((item) => (
                 <Link
                   key={item.name}
