@@ -86,22 +86,25 @@ const MyProblems = () => {
         setTimeout(() => {
           // Get problems from localStorage if any exist
           const storedProblems = localStorage.getItem('submittedProblems');
-          let allProblems = [...mockProblems];
+          let allProblems: Problem[] = [...mockProblems];
           
           if (storedProblems) {
-            const parsedProblems = JSON.parse(storedProblems).map((problem: any) => ({
-              ...problem,
-              status: problem.status || "pending" as const,
-              createdAt: problem.createdAt || new Date().toISOString(),
-              statusUpdateTime: problem.statusUpdateTime || problem.createdAt || new Date().toISOString()
-            }));
+            const parsedProblems = JSON.parse(storedProblems);
             
             // Filter to only include problems where userId matches or if no userId is present (for mock data)
+            // The key fix: ensure we're properly filtering by both userId and userEmail
             const userProblems = parsedProblems.filter((p: Problem) => 
-              !p.userId || p.userId === user?.id || p.userEmail === user?.primaryEmailAddress?.emailAddress
+              !p.userId || 
+              p.userId === user?.id || 
+              p.userEmail === user?.primaryEmailAddress?.emailAddress
             );
             
+            // Only use user-specific problems
             allProblems = [...userProblems];
+            
+            console.log("Current user email:", user?.primaryEmailAddress?.emailAddress);
+            console.log("Found problems:", allProblems.length);
+            console.log("All stored problems:", parsedProblems.length);
             
             // Check for status updates since last check
             if (lastCheckedTime) {

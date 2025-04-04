@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { Mail, User, CalendarClock, MapPin, Tag } from 'lucide-react';
+import { Mail, User, CalendarClock, MapPin, Tag, AlertTriangle } from 'lucide-react';
 import { toast } from 'sonner';
 import { useUser } from '@clerk/clerk-react';
 import { useNavigate } from 'react-router-dom';
@@ -23,11 +23,15 @@ interface Problem {
   description: string;
   category: string;
   location: string;
-  status: 'pending' | 'in-progress' | 'resolved' | 'rejected';
+  status: 'pending' | 'in_progress' | 'resolved' | 'rejected';
   userEmail?: string;
   userName?: string;
+  contactNumber?: string;
+  urgency?: string;
   submittedAt: string;
   statusUpdateTime?: string;
+  userId?: string;
+  createdAt?: string;
 }
 
 const AdminPanel = () => {
@@ -55,7 +59,16 @@ const AdminPanel = () => {
   const loadProblems = () => {
     const storedProblems = localStorage.getItem('submittedProblems');
     if (storedProblems) {
-      setProblems(JSON.parse(storedProblems));
+      const parsedProblems = JSON.parse(storedProblems);
+      // Normalize fields between different problem formats
+      const normalizedProblems = parsedProblems.map((problem: any) => ({
+        ...problem,
+        submittedAt: problem.submittedAt || problem.createdAt || new Date().toISOString(),
+        status: problem.status || 'pending',
+      }));
+      
+      setProblems(normalizedProblems);
+      console.log("Loaded problems:", normalizedProblems.length);
     }
   };
   
@@ -76,24 +89,13 @@ const AdminPanel = () => {
     
     setProblems(updatedProblems);
     
-    // Update localStorage (only for user-submitted problems)
-    const storedProblems = localStorage.getItem('submittedProblems');
-    if (storedProblems) {
-      const parsedProblems = JSON.parse(storedProblems);
-      const updatedStoredProblems = parsedProblems.map((problem: any) => 
-        problem.id === id ? { 
-          ...problem, 
-          status: newStatus,
-          statusUpdateTime 
-        } : problem
-      );
-      localStorage.setItem('submittedProblems', JSON.stringify(updatedStoredProblems));
-    }
+    // Update localStorage
+    localStorage.setItem('submittedProblems', JSON.stringify(updatedProblems));
     
     // Show notification to admin based on status change
     if (newStatus === 'resolved') {
       toast.success("Problem has been marked as resolved");
-    } else if (newStatus === 'in-progress') {
+    } else if (newStatus === 'in_progress') {
       toast.info("Problem has been marked as in progress");
     } else if (newStatus === 'rejected') {
       toast.error("Problem has been rejected");
@@ -114,7 +116,7 @@ const AdminPanel = () => {
           messageTitle = "Your reported problem has been resolved";
           messageBody = `We're pleased to inform you that your reported issue "${problemToUpdate.title}" has been successfully resolved.`;
           break;
-        case 'in-progress':
+        case 'in_progress':
           messageTitle = "Your reported problem is being addressed";
           messageBody = `We wanted to let you know that we're currently working on your reported issue "${problemToUpdate.title}".`;
           break;
@@ -142,6 +144,15 @@ const AdminPanel = () => {
           duration: 6000
         }
       );
+    } else {
+      // No email available, show warning
+      toast.warning(
+        <div className="flex items-center gap-2">
+          <AlertTriangle className="h-5 w-5" />
+          <span>Cannot send notification - no email provided for this problem</span>
+        </div>,
+        { duration: 3000 }
+      );
     }
   };
 
@@ -149,7 +160,7 @@ const AdminPanel = () => {
     switch(status) {
       case 'pending':
         return 'bg-yellow-100 text-yellow-800';
-      case 'in-progress':
+      case 'in_progress':
         return 'bg-blue-100 text-blue-800';
       case 'resolved':
         return 'bg-green-100 text-green-800';
@@ -157,6 +168,15 @@ const AdminPanel = () => {
         return 'bg-red-100 text-red-800';
       default:
         return 'bg-gray-100 text-gray-800';
+    }
+  };
+
+  // Helper function to format dates
+  const formatDate = (dateString: string) => {
+    try {
+      return new Date(dateString).toLocaleString();
+    } catch (e) {
+      return 'Invalid date';
     }
   };
 
@@ -190,13 +210,23 @@ const AdminPanel = () => {
                         <div>
                           <h3 className="font-medium text-lg">{problem.title}</h3>
                           <p className="text-gray-600 mt-1">{problem.description}</p>
+                          {problem.urgency && (
+                            <div className="mt-2">
+                              <span className={`text-xs px-2 py-1 rounded-full
+                                ${problem.urgency === 'high' ? 'bg-red-100 text-red-800' : 
+                                  problem.urgency === 'medium' ? 'bg-orange-100 text-orange-800' : 
+                                  'bg-blue-100 text-blue-800'}`}>
+                                {problem.urgency.charAt(0).toUpperCase() + problem.urgency.slice(1)} Priority
+                              </span>
+                            </div>
+                          )}
                         </div>
                       </TableCell>
                       <TableCell>
                         <div className="flex flex-col gap-2">
                           <div className="flex items-center gap-2">
                             <Tag className="h-4 w-4 text-gray-500" />
-                            <span>{problem.category}</span>
+                            <span className="capitalize">{problem.category}</span>
                           </div>
                           <div className="flex items-center gap-2">
                             <MapPin className="h-4 w-4 text-gray-500" />
@@ -208,8 +238,13 @@ const AdminPanel = () => {
                         <div className="flex items-center gap-2">
                           <User className="h-5 w-5 text-gray-500" />
                           <div>
-                            <div className="font-medium">{problem.userEmail || 'Anonymous'}</div>
-                            {problem.userName && <div className="text-sm text-gray-500">{problem.userName}</div>}
+                            <div className="font-medium">{problem.userName || 'Anonymous'}</div>
+                            {problem.userEmail && (
+                              <div className="text-sm text-gray-500">{problem.userEmail}</div>
+                            )}
+                            {problem.contactNumber && (
+                              <div className="text-sm text-gray-500">Phone: {problem.contactNumber}</div>
+                            )}
                           </div>
                         </div>
                       </TableCell>
@@ -217,7 +252,7 @@ const AdminPanel = () => {
                         <div className="flex flex-col gap-2">
                           <div className="flex items-center gap-2">
                             <CalendarClock className="h-4 w-4 text-gray-500" />
-                            <span className="text-sm">{new Date(problem.submittedAt).toLocaleString()}</span>
+                            <span className="text-sm">{formatDate(problem.submittedAt)}</span>
                           </div>
                           <div>
                             <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusBadgeClass(problem.status)}`}>
@@ -226,7 +261,7 @@ const AdminPanel = () => {
                           </div>
                           {problem.statusUpdateTime && (
                             <div className="text-xs text-gray-500">
-                              Last updated: {new Date(problem.statusUpdateTime).toLocaleString()}
+                              Last updated: {formatDate(problem.statusUpdateTime)}
                             </div>
                           )}
                         </div>
@@ -239,15 +274,20 @@ const AdminPanel = () => {
                             onChange={(e) => handleStatusChange(problem.id, e.target.value as Problem["status"])}
                           >
                             <option value="pending">Pending</option>
-                            <option value="in-progress">In Progress</option>
+                            <option value="in_progress">In Progress</option>
                             <option value="resolved">Resolved</option>
                             <option value="rejected">Rejected</option>
                           </select>
                           
-                          {problem.userEmail && (
+                          {problem.userEmail ? (
                             <div className="flex items-center text-xs text-blue-600">
                               <Mail className="h-3 w-3 mr-1" />
                               <span>Email notifications enabled</span>
+                            </div>
+                          ) : (
+                            <div className="flex items-center text-xs text-gray-500">
+                              <Mail className="h-3 w-3 mr-1" />
+                              <span>No email available</span>
                             </div>
                           )}
                         </div>

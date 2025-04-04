@@ -65,7 +65,7 @@ const Navbar = () => {
             ))}
             
             <SignedIn>
-              {/* Only show Add Problem and My Problems links for non-admin users */}
+              {/* Only show regular user links if not admin */}
               {!isAdmin && authItems.signedIn.map((item, index) => (
                 <Link
                   key={item.name}
@@ -138,7 +138,7 @@ const Navbar = () => {
             ))}
             
             <SignedIn>
-              {/* Only show Add Problem and My Problems links for non-admin users in mobile menu */}
+              {/* Only show regular user links if not admin in mobile menu */}
               {!isAdmin && authItems.signedIn.map((item) => (
                 <Link
                   key={item.name}
