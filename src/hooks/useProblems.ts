@@ -44,6 +44,7 @@ export const useProblems = () => {
             status: "pending" as const,
             createdAt: new Date(2023, 10, 15).toISOString(),
             statusUpdateTime: new Date(2023, 10, 15).toISOString(),
+            image: null,
           },
           {
             id: 2,
@@ -53,6 +54,7 @@ export const useProblems = () => {
             status: "in_progress" as const,
             createdAt: new Date(2023, 10, 12).toISOString(),
             statusUpdateTime: new Date(2023, 10, 12).toISOString(),
+            image: null,
           },
           {
             id: 3,
@@ -62,6 +64,7 @@ export const useProblems = () => {
             status: "resolved" as const,
             createdAt: new Date(2023, 10, 5).toISOString(),
             statusUpdateTime: new Date(2023, 10, 5).toISOString(),
+            image: null,
           }
         ];
         
@@ -117,8 +120,23 @@ export const useProblems = () => {
                 
                 // Notify user of any status updates
                 updatedProblems.forEach(problem => {
+                  let statusMessage = "";
+                  switch(problem.status) {
+                    case "resolved":
+                      statusMessage = "has been resolved";
+                      break;
+                    case "in_progress":
+                      statusMessage = "is now being addressed";
+                      break;
+                    case "rejected":
+                      statusMessage = "has been rejected";
+                      break;
+                    default:
+                      statusMessage = "has been updated to " + problem.status;
+                  }
+                  
                   toast.info(
-                    `The status of your problem "${problem.title}" has been updated to ${problem.status.replace('_', ' ')}`,
+                    `Your problem "${problem.title}" ${statusMessage}`,
                     { duration: 5000, closeButton: true }
                   );
                 });

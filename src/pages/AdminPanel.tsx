@@ -8,7 +8,7 @@ import { useAdminProblems } from '../hooks/useAdminProblems';
 import { Mail } from 'lucide-react';
 
 const AdminPanel = () => {
-  const { problems, handleStatusChange } = useAdminProblems();
+  const { problems, handleStatusChange, isLoading } = useAdminProblems();
   const { t } = useTranslation();
   
   return (
@@ -19,10 +19,23 @@ const AdminPanel = () => {
         
         <div className="bg-white shadow-md rounded-lg p-6">
           <h2 className="text-xl font-semibold mb-4">Manage Problems</h2>
-          <ProblemTable 
-            problems={problems}
-            onStatusChange={handleStatusChange}
-          />
+          
+          {isLoading ? (
+            <div className="flex justify-center my-8">
+              <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
+            </div>
+          ) : (
+            problems.length > 0 ? (
+              <ProblemTable 
+                problems={problems}
+                onStatusChange={handleStatusChange}
+              />
+            ) : (
+              <div className="text-center py-8 text-gray-500">
+                No problems found in the system.
+              </div>
+            )
+          )}
         </div>
       </main>
       <Footer />

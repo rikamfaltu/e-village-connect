@@ -29,6 +29,7 @@ const adminEmails = ["admin@example.com", "2023bit045@sggs.ac.in"];
 
 export const useAdminProblems = () => {
   const [problems, setProblems] = useState<Problem[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const { user } = useUser();
   const navigate = useNavigate();
   
@@ -41,6 +42,7 @@ export const useAdminProblems = () => {
       navigate('/');
     } else {
       loadProblems();
+      setIsLoading(false);
     }
   }, [user, navigate]);
   
@@ -70,13 +72,39 @@ export const useAdminProblems = () => {
     }
   };
   
-  // Simulate sending an SMS
-  const simulateSendSMS = (phoneNumber: string, message: string) => {
+  // Send email notification
+  const sendEmailNotification = (email: string, subject: string, message: string) => {
+    console.log(`Sending email to ${email}:`);
+    console.log(`Subject: ${subject}`);
+    console.log(`Message: ${message}`);
+    
+    // In a real app, this would call an email API
+    // For this demo, we'll simulate with a toast notification
+    toast.success(
+      <div className="flex flex-col gap-1">
+        <div className="font-medium">Email notification sent</div>
+        <div className="text-sm text-gray-500">
+          <p>To: {email}</p>
+          <p>Subject: {subject}</p>
+          <p>Message: {message}</p>
+        </div>
+      </div>,
+      {
+        icon: <Mail className="h-5 w-5 text-blue-500" />,
+        duration: 6000
+      }
+    );
+    
+    return true;
+  };
+  
+  // Send SMS notification
+  const sendSMSNotification = (phoneNumber: string, message: string) => {
     console.log(`Sending SMS to ${phoneNumber}: ${message}`);
     
     // In a real app, this would call an SMS API
-    // For this demo, we'll just show a toast notification
-    toast.info(
+    // For this demo, we'll simulate with a toast notification
+    toast.success(
       <div className="flex flex-col gap-1">
         <div className="font-medium">SMS notification sent</div>
         <div className="text-sm text-gray-500">
@@ -89,12 +117,18 @@ export const useAdminProblems = () => {
         duration: 6000
       }
     );
+    
+    return true;
   };
   
   const handleStatusChange = (id: number, newStatus: Problem["status"]) => {
     // Find the problem to update
     const problemToUpdate = problems.find(problem => problem.id === id);
-    if (!problemToUpdate) return;
+    if (!problemToUpdate) {
+      console.error("Problem not found:", id);
+      toast.error("Problem not found");
+      return;
+    }
     
     const statusUpdateTime = new Date().toISOString();
     
@@ -130,17 +164,17 @@ export const useAdminProblems = () => {
     switch(newStatus) {
       case 'resolved':
         messageTitle = "Your reported problem has been resolved";
-        messageBody = `We're pleased to inform you that your reported issue "${problemToUpdate.title}" has been successfully resolved.`;
+        messageBody = `We're pleased to inform you that your reported issue "${problemToUpdate.title}" has been successfully resolved. Thank you for your patience!`;
         smsMessage = `Your reported issue "${problemToUpdate.title}" has been resolved. Thank you for your patience!`;
         break;
       case 'in_progress':
         messageTitle = "Your reported problem is being addressed";
-        messageBody = `We wanted to let you know that we're currently working on your reported issue "${problemToUpdate.title}".`;
+        messageBody = `We wanted to let you know that we're currently working on your reported issue "${problemToUpdate.title}". We'll update you once it's resolved.`;
         smsMessage = `We are currently addressing your issue "${problemToUpdate.title}". We'll update you once it's resolved.`;
         break;
       case 'rejected':
         messageTitle = "Update on your reported problem";
-        messageBody = `We regret to inform you that we cannot proceed with your reported issue "${problemToUpdate.title}" at this time.`;
+        messageBody = `We regret to inform you that we cannot proceed with your reported issue "${problemToUpdate.title}" at this time. Please contact the village office for more details.`;
         smsMessage = `Regarding your issue "${problemToUpdate.title}": We cannot proceed with this at this time. Please contact the village office for more details.`;
         break;
       default:
@@ -149,23 +183,14 @@ export const useAdminProblems = () => {
         smsMessage = `Your issue "${problemToUpdate.title}" has been received and is under review.`;
     }
     
+    let notificationsSent = false;
+    
     // Send email notification if email is available
     if (problemToUpdate.userEmail) {
-      // Show a toast to simulate email being sent
-      toast.info(
-        <div className="flex flex-col gap-1">
-          <div className="font-medium">Notification sent to user</div>
-          <div className="text-sm text-gray-500">
-            <p>To: {problemToUpdate.userEmail}</p>
-            <p>Subject: {messageTitle}</p>
-            <p>Message: {messageBody}</p>
-          </div>
-        </div>,
-        {
-          icon: <Mail className="h-5 w-5 text-blue-500" />,
-          duration: 6000
-        }
-      );
+      const emailSent = sendEmailNotification(problemToUpdate.userEmail, messageTitle, messageBody);
+      if (emailSent) {
+        notificationsSent = true;
+      }
     } else {
       // No email available, show warning
       toast.warning(
@@ -179,7 +204,10 @@ export const useAdminProblems = () => {
     
     // Send SMS notification if phone number is available
     if (problemToUpdate.contactNumber) {
-      simulateSendSMS(problemToUpdate.contactNumber, smsMessage);
+      const smsSent = sendSMSNotification(problemToUpdate.contactNumber, smsMessage);
+      if (smsSent) {
+        notificationsSent = true;
+      }
     } else {
       // No phone number available
       toast.warning(
@@ -190,7 +218,13 @@ export const useAdminProblems = () => {
         { duration: 3000 }
       );
     }
+
+    if (notificationsSent) {
+      toast.success("Notifications sent to user about status update", {
+        duration: 4000
+      });
+    }
   };
 
-  return { problems, handleStatusChange };
+  return { problems, handleStatusChange, isLoading };
 };
