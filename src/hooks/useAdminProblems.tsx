@@ -48,16 +48,23 @@ export const useAdminProblems = () => {
   const loadProblems = () => {
     const storedProblems = localStorage.getItem('submittedProblems');
     if (storedProblems) {
-      const parsedProblems = JSON.parse(storedProblems);
-      // Normalize fields between different problem formats
-      const normalizedProblems = parsedProblems.map((problem: any) => ({
-        ...problem,
-        submittedAt: problem.submittedAt || problem.createdAt || new Date().toISOString(),
-        status: problem.status || 'pending',
-      }));
-      
-      setProblems(normalizedProblems);
-      console.log("Loaded problems:", normalizedProblems.length);
+      try {
+        const parsedProblems = JSON.parse(storedProblems);
+        // Normalize fields between different problem formats
+        const normalizedProblems = parsedProblems.map((problem: any) => ({
+          ...problem,
+          submittedAt: problem.submittedAt || problem.createdAt || new Date().toISOString(),
+          status: problem.status || 'pending',
+        }));
+        
+        setProblems(normalizedProblems);
+        console.log("Admin: Loaded problems:", normalizedProblems.length);
+      } catch (error) {
+        console.error("Error parsing stored problems:", error);
+        toast.error("Failed to load problems data");
+      }
+    } else {
+      console.log("No stored problems found");
     }
   };
   

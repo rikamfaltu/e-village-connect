@@ -23,6 +23,9 @@ export const useProblems = () => {
   }, []);
 
   useEffect(() => {
+    // Only fetch problems if user is available
+    if (!user) return;
+    
     // Fetch problems
     const fetchProblems = async () => {
       setIsLoading(true);
@@ -61,25 +64,36 @@ export const useProblems = () => {
         setTimeout(() => {
           // Get problems from localStorage if any exist
           const storedProblems = localStorage.getItem('submittedProblems');
-          let allProblems: Problem[] = [...mockProblems];
+          let allProblems: Problem[] = [];
           
           if (storedProblems) {
             const parsedProblems = JSON.parse(storedProblems);
             
-            // Filter to only include problems where userId matches or if no userId is present (for mock data)
-            // The key fix: ensure we're properly filtering by both userId and userEmail
-            const userProblems = parsedProblems.filter((p: Problem) => 
-              !p.userId || 
-              p.userId === user?.id || 
-              p.userEmail === user?.primaryEmailAddress?.emailAddress
-            );
-            
-            // Only use user-specific problems
-            allProblems = [...userProblems];
-            
             console.log("Current user email:", user?.primaryEmailAddress?.emailAddress);
-            console.log("Found problems:", allProblems.length);
+            console.log("Current user ID:", user?.id);
             console.log("All stored problems:", parsedProblems.length);
+            
+            // Fix: Enhanced filtering to properly check for user's problems
+            const userProblems = parsedProblems.filter((p: Problem) => {
+              // If the problem has no user identification, show it
+              if (!p.userId && !p.userEmail) return true;
+              
+              // If user ID matches, show it
+              if (p.userId && p.userId === user?.id) return true;
+              
+              // If user email matches, show it
+              if (p.userEmail && user?.primaryEmailAddress?.emailAddress && 
+                  p.userEmail === user?.primaryEmailAddress?.emailAddress) {
+                return true;
+              }
+              
+              return false;
+            });
+            
+            // Use both mock problems and user problems
+            allProblems = [...mockProblems, ...userProblems];
+            
+            console.log("Found problems:", userProblems.length);
             
             // Check for status updates since last check
             if (lastCheckedTime) {
@@ -100,6 +114,9 @@ export const useProblems = () => {
             const currentTime = new Date().toISOString();
             localStorage.setItem('lastProblemStatusCheck', currentTime);
             setLastCheckedTime(currentTime);
+          } else {
+            // If no stored problems, use mock data
+            allProblems = [...mockProblems];
           }
           
           setProblems(allProblems);
@@ -112,9 +129,7 @@ export const useProblems = () => {
       }
     };
 
-    if (user) {
-      fetchProblems();
-    }
+    fetchProblems();
   }, [user, lastCheckedTime]);
 
   return { problems, isLoading };
