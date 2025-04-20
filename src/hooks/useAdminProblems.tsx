@@ -50,6 +50,8 @@ export const useAdminProblems = () => {
     if (storedProblems) {
       try {
         const parsedProblems = JSON.parse(storedProblems);
+        console.log("Admin: Raw problems from localStorage:", parsedProblems);
+        
         // Normalize fields between different problem formats
         const normalizedProblems = parsedProblems.map((problem: any) => ({
           ...problem,
@@ -175,9 +177,18 @@ export const useAdminProblems = () => {
       );
     }
     
-    // Send SMS notification if phone number is available and status is resolved
-    if (problemToUpdate.contactNumber && newStatus === 'resolved') {
+    // Send SMS notification if phone number is available
+    if (problemToUpdate.contactNumber) {
       simulateSendSMS(problemToUpdate.contactNumber, smsMessage);
+    } else {
+      // No phone number available
+      toast.warning(
+        <div className="flex items-center gap-2">
+          <AlertTriangle className="h-5 w-5" />
+          <span>Cannot send SMS notification - no phone number provided</span>
+        </div>,
+        { duration: 3000 }
+      );
     }
   };
 

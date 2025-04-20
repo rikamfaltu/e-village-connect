@@ -24,7 +24,11 @@ export const useProblems = () => {
 
   useEffect(() => {
     // Only fetch problems if user is available
-    if (!user) return;
+    if (!user) {
+      console.log("User not available, skipping problem fetch");
+      setIsLoading(false);
+      return;
+    }
     
     // Fetch problems
     const fetchProblems = async () => {
@@ -67,57 +71,73 @@ export const useProblems = () => {
           let allProblems: Problem[] = [];
           
           if (storedProblems) {
-            const parsedProblems = JSON.parse(storedProblems);
-            
-            console.log("Current user email:", user?.primaryEmailAddress?.emailAddress);
-            console.log("Current user ID:", user?.id);
-            console.log("All stored problems:", parsedProblems.length);
-            
-            // Fix: Enhanced filtering to properly check for user's problems
-            const userProblems = parsedProblems.filter((p: Problem) => {
-              // If the problem has no user identification, show it
-              if (!p.userId && !p.userEmail) return true;
+            try {
+              const parsedProblems = JSON.parse(storedProblems);
               
-              // If user ID matches, show it
-              if (p.userId && p.userId === user?.id) return true;
+              console.log("Current user email:", user?.primaryEmailAddress?.emailAddress);
+              console.log("Current user ID:", user?.id);
+              console.log("All stored problems:", parsedProblems.length);
               
-              // If user email matches, show it
-              if (p.userEmail && user?.primaryEmailAddress?.emailAddress && 
-                  p.userEmail === user?.primaryEmailAddress?.emailAddress) {
-                return true;
-              }
-              
-              return false;
-            });
-            
-            // Use both mock problems and user problems
-            allProblems = [...mockProblems, ...userProblems];
-            
-            console.log("Found problems:", userProblems.length);
-            
-            // Check for status updates since last check
-            if (lastCheckedTime) {
-              const updatedProblems = allProblems.filter(
-                (p) => p.statusUpdateTime && new Date(p.statusUpdateTime) > new Date(lastCheckedTime)
-              );
-              
-              // Notify user of any status updates
-              updatedProblems.forEach(problem => {
-                toast.info(
-                  `The status of your problem "${problem.title}" has been updated to ${problem.status.replace('_', ' ')}`,
-                  { duration: 5000, closeButton: true }
-                );
+              // Enhanced filtering to properly check for user's problems
+              const userProblems = parsedProblems.filter((p: Problem) => {
+                // Log each problem to debug
+                console.log("Checking problem:", p.id, "userId:", p.userId, "userEmail:", p.userEmail);
+                
+                // If the problem has no user identification, show it
+                if (!p.userId && !p.userEmail) {
+                  return true;
+                }
+                
+                // If user ID matches, show it
+                if (p.userId && user?.id && p.userId === user.id) {
+                  console.log("Match by ID:", p.id);
+                  return true;
+                }
+                
+                // If user email matches, show it
+                if (p.userEmail && user?.primaryEmailAddress?.emailAddress && 
+                    p.userEmail.toLowerCase() === user.primaryEmailAddress.emailAddress.toLowerCase()) {
+                  console.log("Match by email:", p.id);
+                  return true;
+                }
+                
+                return false;
               });
+              
+              console.log("Found user problems:", userProblems.length);
+              
+              // Use both mock problems and user problems
+              allProblems = [...mockProblems, ...userProblems];
+              
+              // Check for status updates since last check
+              if (lastCheckedTime) {
+                const updatedProblems = allProblems.filter(
+                  (p) => p.statusUpdateTime && new Date(p.statusUpdateTime) > new Date(lastCheckedTime)
+                );
+                
+                // Notify user of any status updates
+                updatedProblems.forEach(problem => {
+                  toast.info(
+                    `The status of your problem "${problem.title}" has been updated to ${problem.status.replace('_', ' ')}`,
+                    { duration: 5000, closeButton: true }
+                  );
+                });
+              }
+            } catch (error) {
+              console.error("Error parsing stored problems:", error);
+              toast.error("There was an error loading your problems");
+              allProblems = [...mockProblems];
             }
-            
-            // Update the last checked time
-            const currentTime = new Date().toISOString();
-            localStorage.setItem('lastProblemStatusCheck', currentTime);
-            setLastCheckedTime(currentTime);
           } else {
             // If no stored problems, use mock data
+            console.log("No stored problems found, using mock data");
             allProblems = [...mockProblems];
           }
+          
+          // Update the last checked time
+          const currentTime = new Date().toISOString();
+          localStorage.setItem('lastProblemStatusCheck', currentTime);
+          setLastCheckedTime(currentTime);
           
           setProblems(allProblems);
           setIsLoading(false);

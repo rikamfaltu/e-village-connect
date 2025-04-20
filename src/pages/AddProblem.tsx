@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
@@ -12,10 +11,18 @@ const AddProblem = () => {
   const { user } = useUser();
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
       const file = e.target.files[0];
+      
+      // Check file size (limit to 5MB)
+      if (file.size > 5 * 1024 * 1024) {
+        toast.error("Image size must be less than 5MB");
+        return;
+      }
+      
       setSelectedFile(file);
       
       // Create a preview
@@ -32,49 +39,67 @@ const AddProblem = () => {
     setPreviewUrl(null);
   };
 
-  const onSubmit = (data: any) => {
-    console.log(data);
+  const onSubmit = async (data: any) => {
+    setIsSubmitting(true);
+    console.log("Form data:", data);
+    console.log("Current user:", user?.id, user?.primaryEmailAddress?.emailAddress);
     
-    // Convert image to base64 if present
-    let imageBase64 = previewUrl;
-    
-    // Create a new problem object with user information
-    const newProblem = {
-      id: Date.now(),
-      title: data.title,
-      category: data.category,
-      description: data.description,
-      location: data.location,
-      status: "pending" as const,
-      createdAt: new Date().toISOString(),
-      contactNumber: data.contactNumber || '',
-      urgency: data.urgency || 'medium',
-      // Add image if present
-      image: imageBase64,
-      // Add user information
-      userId: user?.id,
-      userEmail: user?.primaryEmailAddress?.emailAddress,
-      userName: user?.fullName || `${user?.firstName || ''} ${user?.lastName || ''}`.trim() || 'Anonymous User'
-    };
-    
-    // Get existing problems from localStorage
-    const existingProblems = localStorage.getItem('submittedProblems');
-    const problems = existingProblems ? JSON.parse(existingProblems) : [];
-    
-    // Add new problem and save back to localStorage
-    problems.push(newProblem);
-    localStorage.setItem('submittedProblems', JSON.stringify(problems));
-    
-    // Show success toast with dismiss button
-    toast.success("Your problem has been submitted successfully!", {
-      duration: 5000,
-      closeButton: true
-    });
-    
-    // Reset form and image preview
-    reset();
-    setSelectedFile(null);
-    setPreviewUrl(null);
+    try {
+      // Get existing problems from localStorage
+      const existingProblems = localStorage.getItem('submittedProblems');
+      const problems = existingProblems ? JSON.parse(existingProblems) : [];
+      
+      // Generate a unique ID that won't conflict with existing problems
+      const highestId = problems.length > 0 
+        ? Math.max(...problems.map((p: any) => p.id)) 
+        : 0;
+      const newId = highestId + 1;
+      
+      // Create a new problem object with user information
+      const newProblem = {
+        id: newId,
+        title: data.title,
+        category: data.category,
+        description: data.description,
+        location: data.location,
+        status: "pending" as const,
+        createdAt: new Date().toISOString(),
+        contactNumber: data.contactNumber || '',
+        urgency: data.urgency || 'medium',
+        // Add image if present
+        image: previewUrl,
+        // Add user information
+        userId: user?.id,
+        userEmail: user?.primaryEmailAddress?.emailAddress,
+        userName: user?.fullName || `${user?.firstName || ''} ${user?.lastName || ''}`.trim() || 'Anonymous User',
+        submittedAt: new Date().toISOString(),
+      };
+      
+      console.log("Creating new problem:", newProblem);
+      
+      // Add new problem and save back to localStorage
+      problems.push(newProblem);
+      localStorage.setItem('submittedProblems', JSON.stringify(problems));
+      
+      // Show success toast with dismiss button
+      toast.success("Your problem has been submitted successfully!", {
+        duration: 5000,
+        closeButton: true
+      });
+      
+      // Reset form and image preview
+      reset();
+      setSelectedFile(null);
+      setPreviewUrl(null);
+      
+      // Navigate to my problems page (optional)
+      // navigate('/my-problems');
+    } catch (error) {
+      console.error("Error submitting problem:", error);
+      toast.error("Failed to submit your problem. Please try again.");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
