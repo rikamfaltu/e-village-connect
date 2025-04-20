@@ -1,6 +1,7 @@
 
 import React from "react";
 import { Badge } from "@/components/ui/badge";
+import { Image } from "lucide-react";
 
 // Define the Problem type to match our structure
 export interface Problem {
@@ -17,6 +18,7 @@ export interface Problem {
   location?: string;
   urgency?: string;
   statusUpdateTime?: string;
+  image?: string | null;
 }
 
 interface ProblemCardProps {
@@ -66,6 +68,16 @@ const ProblemCard = ({ problem }: ProblemCardProps) => {
         </div>
         
         <p className="text-gray-700 mb-4">{problem.description}</p>
+        
+        {problem.image && (
+          <div className="mb-4">
+            <div className="flex items-center gap-1 mb-2 text-sm text-gray-500">
+              <Image className="h-4 w-4" />
+              <span>Attached Photo:</span>
+            </div>
+            <img src={problem.image} alt="Problem evidence" className="max-h-48 rounded-md border border-gray-300" />
+          </div>
+        )}
         
         <div className="mt-4 text-sm text-gray-600">
           {problem.status === "resolved" ? (

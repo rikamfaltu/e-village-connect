@@ -1,5 +1,6 @@
+
 import React from 'react';
-import { Mail, User, CalendarClock, MapPin, Tag, AlertTriangle } from 'lucide-react';
+import { Mail, User, CalendarClock, MapPin, Tag, AlertTriangle, Phone, Image } from 'lucide-react';
 import {
   Table,
   TableBody,
@@ -51,6 +52,19 @@ const ProblemTable = ({ problems, onStatusChange }: ProblemTableProps) => {
                 <div>
                   <h3 className="font-medium text-lg">{problem.title}</h3>
                   <p className="text-gray-600 mt-1">{problem.description}</p>
+                  {problem.image && (
+                    <div className="mt-3">
+                      <div className="text-sm text-gray-500 mb-1 flex items-center gap-1">
+                        <Image className="w-4 h-4" />
+                        <span>Attached Image:</span>
+                      </div>
+                      <img 
+                        src={problem.image} 
+                        alt="Problem evidence" 
+                        className="max-h-40 rounded-md border border-gray-300"
+                      />
+                    </div>
+                  )}
                   {problem.urgency && (
                     <div className="mt-2">
                       <span className={`text-xs px-2 py-1 rounded-full
