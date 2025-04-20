@@ -1,18 +1,42 @@
 
-import React from "react";
+import React, { useState } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
 import { SignedIn, SignedOut, RedirectToSignIn, useUser } from "@clerk/clerk-react";
-import { X } from "lucide-react";
+import { X, Image } from "lucide-react";
 
 const AddProblem = () => {
   const { register, handleSubmit, formState: { errors }, reset } = useForm();
   const { user } = useUser();
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      const file = e.target.files[0];
+      setSelectedFile(file);
+      
+      // Create a preview
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setPreviewUrl(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const removeSelectedImage = () => {
+    setSelectedFile(null);
+    setPreviewUrl(null);
+  };
 
   const onSubmit = (data: any) => {
     console.log(data);
+    
+    // Convert image to base64 if present
+    let imageBase64 = previewUrl;
     
     // Create a new problem object with user information
     const newProblem = {
@@ -25,6 +49,8 @@ const AddProblem = () => {
       createdAt: new Date().toISOString(),
       contactNumber: data.contactNumber || '',
       urgency: data.urgency || 'medium',
+      // Add image if present
+      image: imageBase64,
       // Add user information
       userId: user?.id,
       userEmail: user?.primaryEmailAddress?.emailAddress,
@@ -45,7 +71,10 @@ const AddProblem = () => {
       closeButton: true
     });
     
+    // Reset form and image preview
     reset();
+    setSelectedFile(null);
+    setPreviewUrl(null);
   };
 
   return (
@@ -124,6 +153,45 @@ const AddProblem = () => {
               </div>
 
               <div>
+                <label htmlFor="image" className="block text-sm font-medium text-gray-700 mb-1">
+                  Upload Image (optional)
+                </label>
+                <div className="mt-1 flex items-center justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-md">
+                  {!previewUrl ? (
+                    <div className="space-y-1 text-center">
+                      <Image className="mx-auto h-12 w-12 text-gray-400" />
+                      <div className="flex text-sm text-gray-600">
+                        <label htmlFor="file-upload" className="relative cursor-pointer bg-white rounded-md font-medium text-primary hover:text-primary">
+                          <span>Upload a file</span>
+                          <input 
+                            id="file-upload" 
+                            name="file-upload" 
+                            type="file" 
+                            className="sr-only" 
+                            accept="image/*"
+                            onChange={handleFileChange}
+                          />
+                        </label>
+                        <p className="pl-1">or drag and drop</p>
+                      </div>
+                      <p className="text-xs text-gray-500">PNG, JPG, GIF up to 10MB</p>
+                    </div>
+                  ) : (
+                    <div className="relative w-full">
+                      <img src={previewUrl} alt="Preview" className="max-h-48 mx-auto rounded-md" />
+                      <button 
+                        type="button"
+                        onClick={removeSelectedImage}
+                        className="absolute top-0 right-0 bg-red-500 text-white rounded-full p-1 shadow-md hover:bg-red-600 transition-colors"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <div>
                 <label htmlFor="urgency" className="block text-sm font-medium text-gray-700 mb-1">
                   Urgency Level
                 </label>
@@ -170,7 +238,7 @@ const AddProblem = () => {
 
               <div>
                 <label htmlFor="contactNumber" className="block text-sm font-medium text-gray-700 mb-1">
-                  Contact Number (optional)
+                  Contact Number (for SMS notifications)
                 </label>
                 <input
                   {...register("contactNumber", {
@@ -183,6 +251,7 @@ const AddProblem = () => {
                   className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary focus:ring-primary"
                   placeholder="Your 10-digit phone number"
                 />
+                <p className="text-xs text-gray-500 mt-1">We'll send you updates about your complaint status via SMS</p>
                 {errors.contactNumber && <p className="text-red-500 text-sm mt-1">{errors.contactNumber.message?.toString()}</p>}
               </div>
 

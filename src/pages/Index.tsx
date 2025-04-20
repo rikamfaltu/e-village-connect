@@ -5,9 +5,20 @@ import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
 import VillageGallery from "../components/VillageGallery";
 import { useTranslation } from "react-i18next";
+import { useEffect, useState } from "react";
 
 const Index = () => {
   const { t } = useTranslation();
+  const [problemsCount, setProblemsCount] = useState(0);
+
+  // Get the total count of submitted problems
+  useEffect(() => {
+    const storedProblems = localStorage.getItem('submittedProblems');
+    if (storedProblems) {
+      const parsedProblems = JSON.parse(storedProblems);
+      setProblemsCount(parsedProblems.length);
+    }
+  }, []);
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -55,7 +66,7 @@ const Index = () => {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             <StatisticsCard
               title={t('home.complaintsRegistered')}
-              count={150}
+              count={problemsCount}
               icon={<MessageSquare className="w-6 h-6" />}
             />
             <StatisticsCard

@@ -1,3 +1,4 @@
+
 import { ChartBar } from "lucide-react";
 
 interface StatisticsCardProps {

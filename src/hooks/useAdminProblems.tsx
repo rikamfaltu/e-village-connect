@@ -3,7 +3,7 @@ import { useState, useEffect } from 'react';
 import { toast } from 'sonner';
 import { useUser } from '@clerk/clerk-react';
 import { useNavigate } from 'react-router-dom';
-import { Mail, AlertTriangle } from 'lucide-react';
+import { Mail, AlertTriangle, Phone } from 'lucide-react';
 
 // Define Problem type
 export interface Problem {
@@ -21,6 +21,7 @@ export interface Problem {
   statusUpdateTime?: string;
   userId?: string;
   createdAt?: string;
+  image?: string | null;
 }
 
 // Admin emails for authorization
@@ -60,6 +61,27 @@ export const useAdminProblems = () => {
     }
   };
   
+  // Simulate sending an SMS
+  const simulateSendSMS = (phoneNumber: string, message: string) => {
+    console.log(`Sending SMS to ${phoneNumber}: ${message}`);
+    
+    // In a real app, this would call an SMS API
+    // For this demo, we'll just show a toast notification
+    toast.info(
+      <div className="flex flex-col gap-1">
+        <div className="font-medium">SMS notification sent</div>
+        <div className="text-sm text-gray-500">
+          <p>To: {phoneNumber}</p>
+          <p>Message: {message}</p>
+        </div>
+      </div>,
+      {
+        icon: <Phone className="h-5 w-5 text-blue-500" />,
+        duration: 6000
+      }
+    );
+  };
+  
   const handleStatusChange = (id: number, newStatus: Problem["status"]) => {
     // Find the problem to update
     const problemToUpdate = problems.find(problem => problem.id === id);
@@ -91,32 +113,35 @@ export const useAdminProblems = () => {
       toast.warning("Problem status updated to pending");
     }
     
-    // In a real app, this would trigger an email notification
-    // For this demo, we'll simulate it with a console log and toast
+    // Prepare notification messages
+    let messageTitle = "";
+    let messageBody = "";
+    let smsMessage = "";
+    
+    switch(newStatus) {
+      case 'resolved':
+        messageTitle = "Your reported problem has been resolved";
+        messageBody = `We're pleased to inform you that your reported issue "${problemToUpdate.title}" has been successfully resolved.`;
+        smsMessage = `Your reported issue "${problemToUpdate.title}" has been resolved. Thank you for your patience!`;
+        break;
+      case 'in_progress':
+        messageTitle = "Your reported problem is being addressed";
+        messageBody = `We wanted to let you know that we're currently working on your reported issue "${problemToUpdate.title}".`;
+        smsMessage = `We are currently addressing your issue "${problemToUpdate.title}". We'll update you once it's resolved.`;
+        break;
+      case 'rejected':
+        messageTitle = "Update on your reported problem";
+        messageBody = `We regret to inform you that we cannot proceed with your reported issue "${problemToUpdate.title}" at this time.`;
+        smsMessage = `Regarding your issue "${problemToUpdate.title}": We cannot proceed with this at this time. Please contact the village office for more details.`;
+        break;
+      default:
+        messageTitle = "Your reported problem status has been updated";
+        messageBody = `We're reviewing your reported issue "${problemToUpdate.title}" and will update you soon.`;
+        smsMessage = `Your issue "${problemToUpdate.title}" has been received and is under review.`;
+    }
+    
+    // Send email notification if email is available
     if (problemToUpdate.userEmail) {
-      console.log(`Email notification sent to ${problemToUpdate.userEmail} about problem status update to ${newStatus}`);
-      
-      let messageTitle = "";
-      let messageBody = "";
-      
-      switch(newStatus) {
-        case 'resolved':
-          messageTitle = "Your reported problem has been resolved";
-          messageBody = `We're pleased to inform you that your reported issue "${problemToUpdate.title}" has been successfully resolved.`;
-          break;
-        case 'in_progress':
-          messageTitle = "Your reported problem is being addressed";
-          messageBody = `We wanted to let you know that we're currently working on your reported issue "${problemToUpdate.title}".`;
-          break;
-        case 'rejected':
-          messageTitle = "Update on your reported problem";
-          messageBody = `We regret to inform you that we cannot proceed with your reported issue "${problemToUpdate.title}" at this time.`;
-          break;
-        default:
-          messageTitle = "Your reported problem status has been updated";
-          messageBody = `We're reviewing your reported issue "${problemToUpdate.title}" and will update you soon.`;
-      }
-      
       // Show a toast to simulate email being sent
       toast.info(
         <div className="flex flex-col gap-1">
@@ -137,10 +162,15 @@ export const useAdminProblems = () => {
       toast.warning(
         <div className="flex items-center gap-2">
           <AlertTriangle className="h-5 w-5" />
-          <span>Cannot send notification - no email provided for this problem</span>
+          <span>Cannot send email notification - no email provided for this problem</span>
         </div>,
         { duration: 3000 }
       );
+    }
+    
+    // Send SMS notification if phone number is available and status is resolved
+    if (problemToUpdate.contactNumber && newStatus === 'resolved') {
+      simulateSendSMS(problemToUpdate.contactNumber, smsMessage);
     }
   };
 
