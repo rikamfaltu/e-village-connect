@@ -1,10 +1,13 @@
+
 import React, { useState } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
 import { SignedIn, SignedOut, RedirectToSignIn, useUser } from "@clerk/clerk-react";
-import { X, Image } from "lucide-react";
+import { X, Image, Loader2 } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { v4 as uuidv4 } from "uuid";
 
 const AddProblem = () => {
   const { register, handleSubmit, formState: { errors }, reset } = useForm();
@@ -45,41 +48,49 @@ const AddProblem = () => {
     console.log("Current user:", user?.id, user?.primaryEmailAddress?.emailAddress);
     
     try {
-      // Get existing problems from localStorage
-      const existingProblems = localStorage.getItem('submittedProblems');
-      const problems = existingProblems ? JSON.parse(existingProblems) : [];
+      let imagePath = null;
       
-      // Generate a unique ID that won't conflict with existing problems
-      const highestId = problems.length > 0 
-        ? Math.max(...problems.map((p: any) => p.id)) 
-        : 0;
-      const newId = highestId + 1;
+      // Upload image to Supabase Storage if one was selected
+      if (selectedFile) {
+        const fileExt = selectedFile.name.split('.').pop();
+        const fileName = `${uuidv4()}.${fileExt}`;
+        const filePath = `${user?.id || 'anonymous'}/${fileName}`;
+        
+        const { error: uploadError } = await supabase.storage
+          .from('problem_images')
+          .upload(filePath, selectedFile);
+        
+        if (uploadError) {
+          throw uploadError;
+        }
+        
+        imagePath = filePath;
+        console.log("Image uploaded successfully at path:", imagePath);
+      }
       
-      // Create a new problem object with user information
-      const newProblem = {
-        id: newId,
-        title: data.title,
-        category: data.category,
-        description: data.description,
-        location: data.location,
-        status: "pending" as const,
-        createdAt: new Date().toISOString(),
-        contactNumber: data.contactNumber || '',
-        urgency: data.urgency || 'medium',
-        // Add image if present
-        image: previewUrl,
-        // Add user information
-        userId: user?.id,
-        userEmail: user?.primaryEmailAddress?.emailAddress,
-        userName: user?.fullName || `${user?.firstName || ''} ${user?.lastName || ''}`.trim() || 'Anonymous User',
-        submittedAt: new Date().toISOString(),
-      };
+      // Create problem record in Supabase
+      const { data: newProblem, error } = await supabase
+        .from('problems')
+        .insert([{
+          title: data.title,
+          category: data.category,
+          description: data.description,
+          location: data.location,
+          status: "pending",
+          user_id: user?.id || null,
+          user_email: user?.primaryEmailAddress?.emailAddress || null,
+          user_name: user?.fullName || `${user?.firstName || ''} ${user?.lastName || ''}`.trim() || 'Anonymous User',
+          contact_number: data.contactNumber || null,
+          urgency: data.urgency || 'medium',
+          image_path: imagePath
+        }])
+        .select();
       
-      console.log("Creating new problem:", newProblem);
+      if (error) {
+        throw error;
+      }
       
-      // Add new problem and save back to localStorage
-      problems.push(newProblem);
-      localStorage.setItem('submittedProblems', JSON.stringify(problems));
+      console.log("Problem submitted successfully:", newProblem);
       
       // Show success toast with dismiss button
       toast.success("Your problem has been submitted successfully!", {
@@ -92,8 +103,6 @@ const AddProblem = () => {
       setSelectedFile(null);
       setPreviewUrl(null);
       
-      // Navigate to my problems page (optional)
-      // navigate('/my-problems');
     } catch (error) {
       console.error("Error submitting problem:", error);
       toast.error("Failed to submit your problem. Please try again.");
@@ -199,7 +208,7 @@ const AddProblem = () => {
                         </label>
                         <p className="pl-1">or drag and drop</p>
                       </div>
-                      <p className="text-xs text-gray-500">PNG, JPG, GIF up to 10MB</p>
+                      <p className="text-xs text-gray-500">PNG, JPG, GIF up to 5MB</p>
                     </div>
                   ) : (
                     <div className="relative w-full">
@@ -282,9 +291,17 @@ const AddProblem = () => {
 
               <button
                 type="submit"
-                className="w-full bg-primary text-white py-2 px-4 rounded-md hover:bg-primary/90 transition-colors"
+                disabled={isSubmitting}
+                className="w-full bg-primary text-white py-2 px-4 rounded-md hover:bg-primary/90 transition-colors flex items-center justify-center"
               >
-                Submit Problem
+                {isSubmitting ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    Submitting...
+                  </>
+                ) : (
+                  "Submit Problem"
+                )}
               </button>
             </form>
           </div>

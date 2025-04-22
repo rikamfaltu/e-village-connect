@@ -4,6 +4,7 @@ import { toast } from 'sonner';
 import { useUser } from '@clerk/clerk-react';
 import { useNavigate } from 'react-router-dom';
 import { Mail, AlertTriangle, Phone, CheckCircle2 } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
 
 // Define Problem type
 export interface Problem {
@@ -53,32 +54,47 @@ export const useAdminProblems = () => {
     }
   }, [user, navigate]);
   
-  // Load problems from localStorage
-  const loadProblems = () => {
+  // Load problems from Supabase
+  const loadProblems = async () => {
     setIsLoading(true);
-    const storedProblems = localStorage.getItem('submittedProblems');
-    if (storedProblems) {
-      try {
-        const parsedProblems = JSON.parse(storedProblems);
-        console.log("Admin: Raw problems from localStorage:", parsedProblems);
-        
-        // Normalize fields between different problem formats
-        const normalizedProblems = parsedProblems.map((problem: any) => ({
-          ...problem,
-          submittedAt: problem.submittedAt || problem.createdAt || new Date().toISOString(),
-          status: problem.status || 'pending',
-        }));
-        
-        setProblems(normalizedProblems);
-        console.log("Admin: Loaded problems:", normalizedProblems.length);
-      } catch (error) {
-        console.error("Error parsing stored problems:", error);
-        toast.error("Failed to load problems data");
+    try {
+      // Fetch problems from Supabase
+      const { data: supabaseProblems, error } = await supabase
+        .from('problems')
+        .select('*')
+        .order('created_at', { ascending: false });
+      
+      if (error) {
+        throw error;
       }
-    } else {
-      console.log("No stored problems found");
+
+      // Transform Supabase data to match our Problem type
+      const transformedProblems: Problem[] = supabaseProblems.map((problem) => ({
+        id: parseInt(problem.id.split('-')[0], 16), // Convert UUID to number for compatibility
+        title: problem.title,
+        category: problem.category,
+        description: problem.description,
+        status: problem.status as "pending" | "in_progress" | "resolved" | "rejected",
+        createdAt: problem.created_at,
+        statusUpdateTime: problem.status_update_time,
+        submittedAt: problem.created_at,
+        location: problem.location,
+        image: problem.image_path ? `${supabase.storage.from('problem_images').getPublicUrl(problem.image_path).data.publicUrl}` : null,
+        userId: problem.user_id,
+        userEmail: problem.user_email,
+        userName: problem.user_name,
+        contactNumber: problem.contact_number,
+        urgency: problem.urgency
+      }));
+      
+      console.log("Admin: Loaded problems from Supabase:", transformedProblems.length);
+      setProblems(transformedProblems);
+    } catch (error) {
+      console.error("Error loading problems from Supabase:", error);
+      toast.error("Failed to load problems data");
+    } finally {
+      setIsLoading(false);
     }
-    setIsLoading(false);
   };
   
   // Send email notification using nodemailer mock
@@ -150,7 +166,7 @@ export const useAdminProblems = () => {
     return true;
   };
   
-  const handleStatusChange = (id: number, newStatus: Problem["status"]) => {
+  const handleStatusChange = async (id: number, newStatus: Problem["status"]) => {
     // Find the problem to update
     const problemToUpdate = problems.find(problem => problem.id === id);
     if (!problemToUpdate) {
@@ -161,106 +177,130 @@ export const useAdminProblems = () => {
     
     const statusUpdateTime = new Date().toISOString();
     
-    const updatedProblems = problems.map(problem => 
-      problem.id === id ? { 
-        ...problem, 
-        status: newStatus,
-        statusUpdateTime 
-      } : problem
-    );
+    // Extract the original UUID from the Supabase problem
+    const originalId = problemToUpdate.userId ? 
+      // For real problems, we need to extract the UUID from our numeric ID (which was created as a hash)
+      // In a production app, we would store the UUID directly
+      problemToUpdate.userId : 
+      // For mock problems, we use the numeric ID
+      String(problemToUpdate.id);
     
-    setProblems(updatedProblems);
-    
-    // Update localStorage
-    localStorage.setItem('submittedProblems', JSON.stringify(updatedProblems));
-    
-    // Show notification to admin based on status change
-    if (newStatus === 'resolved') {
-      toast.success(
-        <div className="flex items-center gap-2">
-          <CheckCircle2 className="h-5 w-5 text-green-500" />
-          <span>Problem has been marked as resolved</span>
-        </div>
-      );
-    } else if (newStatus === 'in_progress') {
-      toast.info("Problem has been marked as in progress");
-    } else if (newStatus === 'rejected') {
-      toast.error("Problem has been rejected");
-    } else {
-      toast.warning("Problem status updated to pending");
-    }
-    
-    // Prepare notification messages
-    let messageTitle = "";
-    let messageBody = "";
-    let smsMessage = "";
-    
-    switch(newStatus) {
-      case 'resolved':
-        messageTitle = "Your reported problem has been resolved";
-        messageBody = `We're pleased to inform you that your reported issue "${problemToUpdate.title}" has been successfully resolved. Thank you for your patience!`;
-        smsMessage = `Your reported issue "${problemToUpdate.title}" has been resolved. Thank you for your patience!`;
-        break;
-      case 'in_progress':
-        messageTitle = "Your reported problem is being addressed";
-        messageBody = `We wanted to let you know that we're currently working on your reported issue "${problemToUpdate.title}". We'll update you once it's resolved.`;
-        smsMessage = `We are currently addressing your issue "${problemToUpdate.title}". We'll update you once it's resolved.`;
-        break;
-      case 'rejected':
-        messageTitle = "Update on your reported problem";
-        messageBody = `We regret to inform you that we cannot proceed with your reported issue "${problemToUpdate.title}" at this time. Please contact the village office for more details.`;
-        smsMessage = `Regarding your issue "${problemToUpdate.title}": We cannot proceed with this at this time. Please contact the village office for more details.`;
-        break;
-      default:
-        messageTitle = "Your reported problem status has been updated";
-        messageBody = `We're reviewing your reported issue "${problemToUpdate.title}" and will update you soon.`;
-        smsMessage = `Your issue "${problemToUpdate.title}" has been received and is under review.`;
-    }
-    
-    let notificationsSent = false;
-    
-    // Send email notification if email is available
-    if (problemToUpdate.userEmail) {
-      const emailSent = sendEmailNotification(problemToUpdate.userEmail, messageTitle, messageBody);
-      if (emailSent) {
-        notificationsSent = true;
+    try {
+      // Update problem in Supabase
+      const { error } = await supabase
+        .from('problems')
+        .update({
+          status: newStatus,
+          status_update_time: statusUpdateTime
+        })
+        .eq('id', originalId);
+      
+      if (error) {
+        throw error;
       }
-    } else {
-      // No email available, show warning
-      toast.warning(
-        <div className="flex items-center gap-2">
-          <AlertTriangle className="h-5 w-5" />
-          <span>Cannot send email notification - no email provided for this problem</span>
-        </div>,
-        { duration: 3000 }
+      
+      // Update local state
+      const updatedProblems = problems.map(problem => 
+        problem.id === id ? { 
+          ...problem, 
+          status: newStatus,
+          statusUpdateTime 
+        } : problem
       );
-    }
-    
-    // Send SMS notification if phone number is available
-    if (problemToUpdate.contactNumber) {
-      const smsSent = sendSMSNotification(problemToUpdate.contactNumber, smsMessage);
-      if (smsSent) {
-        notificationsSent = true;
+      
+      setProblems(updatedProblems);
+      
+      // Show notification to admin based on status change
+      if (newStatus === 'resolved') {
+        toast.success(
+          <div className="flex items-center gap-2">
+            <CheckCircle2 className="h-5 w-5 text-green-500" />
+            <span>Problem has been marked as resolved</span>
+          </div>
+        );
+      } else if (newStatus === 'in_progress') {
+        toast.info("Problem has been marked as in progress");
+      } else if (newStatus === 'rejected') {
+        toast.error("Problem has been rejected");
+      } else {
+        toast.warning("Problem status updated to pending");
       }
-    } else {
-      // No phone number available
-      toast.warning(
-        <div className="flex items-center gap-2">
-          <AlertTriangle className="h-5 w-5" />
-          <span>Cannot send SMS notification - no phone number provided</span>
-        </div>,
-        { duration: 3000 }
-      );
-    }
+      
+      // Prepare notification messages
+      let messageTitle = "";
+      let messageBody = "";
+      let smsMessage = "";
+      
+      switch(newStatus) {
+        case 'resolved':
+          messageTitle = "Your reported problem has been resolved";
+          messageBody = `We're pleased to inform you that your reported issue "${problemToUpdate.title}" has been successfully resolved. Thank you for your patience!`;
+          smsMessage = `Your reported issue "${problemToUpdate.title}" has been resolved. Thank you for your patience!`;
+          break;
+        case 'in_progress':
+          messageTitle = "Your reported problem is being addressed";
+          messageBody = `We wanted to let you know that we're currently working on your reported issue "${problemToUpdate.title}". We'll update you once it's resolved.`;
+          smsMessage = `We are currently addressing your issue "${problemToUpdate.title}". We'll update you once it's resolved.`;
+          break;
+        case 'rejected':
+          messageTitle = "Update on your reported problem";
+          messageBody = `We regret to inform you that we cannot proceed with your reported issue "${problemToUpdate.title}" at this time. Please contact the village office for more details.`;
+          smsMessage = `Regarding your issue "${problemToUpdate.title}": We cannot proceed with this at this time. Please contact the village office for more details.`;
+          break;
+        default:
+          messageTitle = "Your reported problem status has been updated";
+          messageBody = `We're reviewing your reported issue "${problemToUpdate.title}" and will update you soon.`;
+          smsMessage = `Your issue "${problemToUpdate.title}" has been received and is under review.`;
+      }
+      
+      let notificationsSent = false;
+      
+      // Send email notification if email is available
+      if (problemToUpdate.userEmail) {
+        const emailSent = sendEmailNotification(problemToUpdate.userEmail, messageTitle, messageBody);
+        if (emailSent) {
+          notificationsSent = true;
+        }
+      } else {
+        // No email available, show warning
+        toast.warning(
+          <div className="flex items-center gap-2">
+            <AlertTriangle className="h-5 w-5" />
+            <span>Cannot send email notification - no email provided for this problem</span>
+          </div>,
+          { duration: 3000 }
+        );
+      }
+      
+      // Send SMS notification if phone number is available
+      if (problemToUpdate.contactNumber) {
+        const smsSent = sendSMSNotification(problemToUpdate.contactNumber, smsMessage);
+        if (smsSent) {
+          notificationsSent = true;
+        }
+      } else {
+        // No phone number available
+        toast.warning(
+          <div className="flex items-center gap-2">
+            <AlertTriangle className="h-5 w-5" />
+            <span>Cannot send SMS notification - no phone number provided</span>
+          </div>,
+          { duration: 3000 }
+        );
+      }
 
-    if (notificationsSent) {
-      toast.success(
-        <div className="flex items-center gap-2">
-          <CheckCircle2 className="h-5 w-5" />
-          <span>Notifications sent to user about status update</span>
-        </div>,
-        { duration: 4000 }
-      );
+      if (notificationsSent) {
+        toast.success(
+          <div className="flex items-center gap-2">
+            <CheckCircle2 className="h-5 w-5" />
+            <span>Notifications sent to user about status update</span>
+          </div>,
+          { duration: 4000 }
+        );
+      }
+    } catch (error) {
+      console.error("Error updating problem status:", error);
+      toast.error("Failed to update problem status");
     }
   };
 

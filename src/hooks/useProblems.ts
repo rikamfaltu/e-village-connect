@@ -3,6 +3,7 @@ import { useState, useEffect } from "react";
 import { useUser } from "@clerk/clerk-react";
 import { toast } from "sonner";
 import { Problem } from "@/components/problems/ProblemCard";
+import { supabase } from "@/integrations/supabase/client";
 
 export const useProblems = () => {
   const [problems, setProblems] = useState<Problem[]>([]);
@@ -37,7 +38,35 @@ export const useProblems = () => {
     const fetchProblems = async () => {
       setIsLoading(true);
       try {
-        // Mock data with unique IDs starting from 1000 to avoid conflicts
+        // Fetch problems from Supabase
+        const { data: supabaseProblems, error } = await supabase
+          .from('problems')
+          .select('*')
+          .order('created_at', { ascending: false });
+        
+        if (error) {
+          throw error;
+        }
+        
+        // Transform Supabase data to match our Problem type
+        const transformedProblems: Problem[] = supabaseProblems.map((problem) => ({
+          id: parseInt(problem.id.split('-')[0], 16), // Convert UUID to number for compatibility
+          title: problem.title,
+          category: problem.category,
+          description: problem.description,
+          status: problem.status as "pending" | "in_progress" | "resolved" | "rejected",
+          createdAt: problem.created_at,
+          statusUpdateTime: problem.status_update_time,
+          location: problem.location,
+          image: problem.image_path ? `${supabase.storage.from('problem_images').getPublicUrl(problem.image_path).data.publicUrl}` : null,
+          userId: problem.user_id,
+          userEmail: problem.user_email,
+          userName: problem.user_name,
+          contactNumber: problem.contact_number,
+          urgency: problem.urgency
+        }));
+
+        // Mock data for demo purposes - this will be shown alongside real data
         const mockProblems = [
           {
             id: 1001,
@@ -74,77 +103,45 @@ export const useProblems = () => {
           }
         ];
         
-        setTimeout(() => {
-          const storedProblems = localStorage.getItem('submittedProblems');
-          let allProblems: Problem[] = [];
-          
-          if (storedProblems) {
-            try {
-              const parsedProblems = JSON.parse(storedProblems);
-              console.log("Parsing stored problems:", parsedProblems);
-              
-              // Enhanced filtering with unique IDs
-              const userProblems = parsedProblems.filter((p: Problem) => {
-                console.log("Checking problem:", p);
-                return (!p.userId && !p.userEmail) ||
-                       (p.userId && user?.id && p.userId === user.id) ||
-                       (p.userEmail && user?.primaryEmailAddress?.emailAddress && 
-                        p.userEmail.toLowerCase() === user.primaryEmailAddress.emailAddress.toLowerCase());
-              }).map((p: Problem, index: number) => ({
-                ...p,
-                id: 2000 + index // Ensure unique IDs for user problems starting from 2000
-              }));
-              
-              console.log("Found user problems:", userProblems.length);
-              allProblems = [...mockProblems, ...userProblems];
-              
-              // Check for status updates since last check
-              const updatedProblems = allProblems.filter(
-                (p) => p.statusUpdateTime && new Date(p.statusUpdateTime) > new Date(lastCheckedTime)
-              );
-              
-              // Notify user of any status updates
-              updatedProblems.forEach(problem => {
-                let statusMessage = "";
-                switch(problem.status) {
-                  case "resolved":
-                    statusMessage = "has been resolved";
-                    break;
-                  case "in_progress":
-                    statusMessage = "is now being addressed";
-                    break;
-                  case "rejected":
-                    statusMessage = "has been rejected";
-                    break;
-                  default:
-                    statusMessage = "has been updated to " + problem.status;
-                }
-                
-                toast.info(
-                  `Your problem "${problem.title}" ${statusMessage}`,
-                  { duration: 5000, closeButton: true }
-                );
-              });
-              
-            } catch (error) {
-              console.error("Error parsing stored problems:", error);
-              toast.error("There was an error loading your problems");
-              allProblems = [...mockProblems];
-            }
-          } else {
-            console.log("No stored problems found, using mock data");
-            allProblems = [...mockProblems];
+        // Combine mock data with real data
+        const allProblems = [...mockProblems, ...transformedProblems];
+        
+        // Check for status updates since last check
+        const updatedProblems = allProblems.filter(
+          (p) => p.statusUpdateTime && new Date(p.statusUpdateTime) > new Date(lastCheckedTime || '')
+        );
+        
+        // Notify user of any status updates
+        updatedProblems.forEach(problem => {
+          let statusMessage = "";
+          switch(problem.status) {
+            case "resolved":
+              statusMessage = "has been resolved";
+              break;
+            case "in_progress":
+              statusMessage = "is now being addressed";
+              break;
+            case "rejected":
+              statusMessage = "has been rejected";
+              break;
+            default:
+              statusMessage = "has been updated to " + problem.status;
           }
           
-          // Update the last checked time
-          const currentTime = new Date().toISOString();
-          localStorage.setItem('lastProblemStatusCheck', currentTime);
-          setLastCheckedTime(currentTime);
-          
-          console.log("Setting final problems:", allProblems);
-          setProblems(allProblems);
-          setIsLoading(false);
-        }, 800);
+          toast.info(
+            `Your problem "${problem.title}" ${statusMessage}`,
+            { duration: 5000, closeButton: true }
+          );
+        });
+        
+        // Update the last checked time
+        const currentTime = new Date().toISOString();
+        localStorage.setItem('lastProblemStatusCheck', currentTime);
+        setLastCheckedTime(currentTime);
+        
+        console.log("Setting problems:", allProblems);
+        setProblems(allProblems);
+        setIsLoading(false);
       } catch (error) {
         console.error("Error fetching problems:", error);
         toast.error("Failed to load your problems");
