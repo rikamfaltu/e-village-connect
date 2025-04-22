@@ -45,6 +45,7 @@ export const useProblems = () => {
             createdAt: new Date(2023, 10, 15).toISOString(),
             statusUpdateTime: new Date(2023, 10, 15).toISOString(),
             image: null,
+            location: "Sector 4",
           },
           {
             id: 2,
@@ -55,6 +56,7 @@ export const useProblems = () => {
             createdAt: new Date(2023, 10, 12).toISOString(),
             statusUpdateTime: new Date(2023, 10, 12).toISOString(),
             image: null,
+            location: "Main Temple Road",
           },
           {
             id: 3,
@@ -65,6 +67,7 @@ export const useProblems = () => {
             createdAt: new Date(2023, 10, 5).toISOString(),
             statusUpdateTime: new Date(2023, 10, 5).toISOString(),
             image: null,
+            location: "Market Area",
           }
         ];
         

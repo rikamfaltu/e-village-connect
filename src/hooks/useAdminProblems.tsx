@@ -3,7 +3,7 @@ import { useState, useEffect } from 'react';
 import { toast } from 'sonner';
 import { useUser } from '@clerk/clerk-react';
 import { useNavigate } from 'react-router-dom';
-import { Mail, AlertTriangle, Phone } from 'lucide-react';
+import { Mail, AlertTriangle, Phone, CheckCircle2 } from 'lucide-react';
 
 // Define Problem type
 export interface Problem {
@@ -27,6 +27,14 @@ export interface Problem {
 // Admin emails for authorization
 const adminEmails = ["admin@example.com", "2023bit045@sggs.ac.in"];
 
+// Mock nodemailer implementation for demonstration
+const mockNodemailer = {
+  sendMail: (options: any) => {
+    console.log('Sending email via nodemailer:', options);
+    return Promise.resolve({ messageId: 'mock-message-id-' + Date.now() });
+  }
+};
+
 export const useAdminProblems = () => {
   const [problems, setProblems] = useState<Problem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -42,12 +50,12 @@ export const useAdminProblems = () => {
       navigate('/');
     } else {
       loadProblems();
-      setIsLoading(false);
     }
   }, [user, navigate]);
   
   // Load problems from localStorage
   const loadProblems = () => {
+    setIsLoading(true);
     const storedProblems = localStorage.getItem('submittedProblems');
     if (storedProblems) {
       try {
@@ -70,53 +78,74 @@ export const useAdminProblems = () => {
     } else {
       console.log("No stored problems found");
     }
+    setIsLoading(false);
   };
   
-  // Send email notification
+  // Send email notification using nodemailer mock
   const sendEmailNotification = (email: string, subject: string, message: string) => {
     console.log(`Sending email to ${email}:`);
     console.log(`Subject: ${subject}`);
     console.log(`Message: ${message}`);
     
-    // In a real app, this would call an email API
-    // For this demo, we'll simulate with a toast notification
-    toast.success(
-      <div className="flex flex-col gap-1">
-        <div className="font-medium">Email notification sent</div>
-        <div className="text-sm text-gray-500">
-          <p>To: {email}</p>
-          <p>Subject: {subject}</p>
-          <p>Message: {message}</p>
-        </div>
-      </div>,
-      {
-        icon: <Mail className="h-5 w-5 text-blue-500" />,
-        duration: 6000
-      }
-    );
+    // Use our mock nodemailer implementation
+    mockNodemailer.sendMail({
+      from: '2023bit045@sggs.ac.in',
+      to: email,
+      subject: subject,
+      text: message,
+      html: `<div style="font-family: Arial, sans-serif; padding: 20px; border: 1px solid #ddd; border-radius: 5px;">
+        <h2 style="color: #4a5568;">${subject}</h2>
+        <p style="color: #4a5568; font-size: 16px;">${message}</p>
+        <hr style="border: none; border-top: 1px solid #ddd; margin: 20px 0;" />
+        <p style="color: #718096; font-size: 14px;">Village Development Portal</p>
+      </div>`
+    })
+    .then(() => {
+      toast.success(
+        <div className="flex flex-col gap-1">
+          <div className="font-medium">Email notification sent</div>
+          <div className="text-sm text-gray-500">
+            <p>To: {email}</p>
+            <p>Subject: {subject}</p>
+          </div>
+        </div>,
+        {
+          icon: <Mail className="h-5 w-5 text-blue-500" />,
+          duration: 6000
+        }
+      );
+    })
+    .catch((error) => {
+      console.error("Error sending email:", error);
+      toast.error("Failed to send email notification");
+    });
     
     return true;
   };
   
-  // Send SMS notification
+  // Send SMS notification with enhanced feedback
   const sendSMSNotification = (phoneNumber: string, message: string) => {
     console.log(`Sending SMS to ${phoneNumber}: ${message}`);
     
     // In a real app, this would call an SMS API
     // For this demo, we'll simulate with a toast notification
-    toast.success(
-      <div className="flex flex-col gap-1">
-        <div className="font-medium">SMS notification sent</div>
-        <div className="text-sm text-gray-500">
-          <p>To: {phoneNumber}</p>
-          <p>Message: {message}</p>
-        </div>
-      </div>,
-      {
-        icon: <Phone className="h-5 w-5 text-blue-500" />,
-        duration: 6000
-      }
-    );
+    
+    // Simulate a slight delay to make it feel more realistic
+    setTimeout(() => {
+      toast.success(
+        <div className="flex flex-col gap-1">
+          <div className="font-medium">SMS notification sent</div>
+          <div className="text-sm text-gray-500">
+            <p>To: {phoneNumber}</p>
+            <p>Message: {message}</p>
+          </div>
+        </div>,
+        {
+          icon: <Phone className="h-5 w-5 text-blue-500" />,
+          duration: 6000
+        }
+      );
+    }, 800);
     
     return true;
   };
@@ -147,7 +176,12 @@ export const useAdminProblems = () => {
     
     // Show notification to admin based on status change
     if (newStatus === 'resolved') {
-      toast.success("Problem has been marked as resolved");
+      toast.success(
+        <div className="flex items-center gap-2">
+          <CheckCircle2 className="h-5 w-5 text-green-500" />
+          <span>Problem has been marked as resolved</span>
+        </div>
+      );
     } else if (newStatus === 'in_progress') {
       toast.info("Problem has been marked as in progress");
     } else if (newStatus === 'rejected') {
@@ -220,9 +254,13 @@ export const useAdminProblems = () => {
     }
 
     if (notificationsSent) {
-      toast.success("Notifications sent to user about status update", {
-        duration: 4000
-      });
+      toast.success(
+        <div className="flex items-center gap-2">
+          <CheckCircle2 className="h-5 w-5" />
+          <span>Notifications sent to user about status update</span>
+        </div>,
+        { duration: 4000 }
+      );
     }
   };
 

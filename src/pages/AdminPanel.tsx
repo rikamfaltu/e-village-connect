@@ -5,7 +5,7 @@ import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
 import ProblemTable from '../components/admin/ProblemTable';
 import { useAdminProblems } from '../hooks/useAdminProblems';
-import { Mail } from 'lucide-react';
+import { Mail, Loader2 } from 'lucide-react';
 
 const AdminPanel = () => {
   const { problems, handleStatusChange, isLoading } = useAdminProblems();
@@ -21,8 +21,9 @@ const AdminPanel = () => {
           <h2 className="text-xl font-semibold mb-4">Manage Problems</h2>
           
           {isLoading ? (
-            <div className="flex justify-center my-8">
-              <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
+            <div className="flex flex-col items-center justify-center my-8 gap-3">
+              <Loader2 className="animate-spin h-12 w-12 text-primary" />
+              <p className="text-gray-500">Loading problems...</p>
             </div>
           ) : (
             problems.length > 0 ? (
@@ -32,7 +33,8 @@ const AdminPanel = () => {
               />
             ) : (
               <div className="text-center py-8 text-gray-500">
-                No problems found in the system.
+                <p className="mb-2">No problems found in the system.</p>
+                <p className="text-sm">Add some problems from the user interface to see them here.</p>
               </div>
             )
           )}
