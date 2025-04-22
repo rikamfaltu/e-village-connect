@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useUser } from "@clerk/clerk-react";
 import { toast } from "sonner";
@@ -9,21 +10,28 @@ export const useProblems = () => {
   const { user } = useUser();
   const [lastCheckedTime, setLastCheckedTime] = useState<string | null>(null);
 
-  // Load or initialize the last checked time from localStorage
-  const storedLastCheckedTime = localStorage.getItem('lastProblemStatusCheck');
-  if (storedLastCheckedTime) {
-    setLastCheckedTime(storedLastCheckedTime);
-  } else {
-    const currentTime = new Date().toISOString();
-    localStorage.setItem('lastProblemStatusCheck', currentTime);
-    setLastCheckedTime(currentTime);
-  }
+  useEffect(() => {
+    // Load or initialize the last checked time from localStorage - moved inside useEffect
+    const storedLastCheckedTime = localStorage.getItem('lastProblemStatusCheck');
+    if (storedLastCheckedTime) {
+      setLastCheckedTime(storedLastCheckedTime);
+    } else {
+      const currentTime = new Date().toISOString();
+      localStorage.setItem('lastProblemStatusCheck', currentTime);
+      setLastCheckedTime(currentTime);
+    }
+  }, []); // Empty dependency array means this runs once on mount
 
   useEffect(() => {
     if (!user) {
       console.log("User not available, skipping problem fetch");
       setIsLoading(false);
       return;
+    }
+    
+    // Only fetch problems when user and lastCheckedTime are available
+    if (lastCheckedTime === null) {
+      return; // Wait until lastCheckedTime is initialized
     }
     
     const fetchProblems = async () => {
@@ -91,34 +99,32 @@ export const useProblems = () => {
               allProblems = [...mockProblems, ...userProblems];
               
               // Check for status updates since last check
-              if (lastCheckedTime) {
-                const updatedProblems = allProblems.filter(
-                  (p) => p.statusUpdateTime && new Date(p.statusUpdateTime) > new Date(lastCheckedTime)
-                );
+              const updatedProblems = allProblems.filter(
+                (p) => p.statusUpdateTime && new Date(p.statusUpdateTime) > new Date(lastCheckedTime)
+              );
+              
+              // Notify user of any status updates
+              updatedProblems.forEach(problem => {
+                let statusMessage = "";
+                switch(problem.status) {
+                  case "resolved":
+                    statusMessage = "has been resolved";
+                    break;
+                  case "in_progress":
+                    statusMessage = "is now being addressed";
+                    break;
+                  case "rejected":
+                    statusMessage = "has been rejected";
+                    break;
+                  default:
+                    statusMessage = "has been updated to " + problem.status;
+                }
                 
-                // Notify user of any status updates
-                updatedProblems.forEach(problem => {
-                  let statusMessage = "";
-                  switch(problem.status) {
-                    case "resolved":
-                      statusMessage = "has been resolved";
-                      break;
-                    case "in_progress":
-                      statusMessage = "is now being addressed";
-                      break;
-                    case "rejected":
-                      statusMessage = "has been rejected";
-                      break;
-                    default:
-                      statusMessage = "has been updated to " + problem.status;
-                  }
-                  
-                  toast.info(
-                    `Your problem "${problem.title}" ${statusMessage}`,
-                    { duration: 5000, closeButton: true }
-                  );
-                });
-              }
+                toast.info(
+                  `Your problem "${problem.title}" ${statusMessage}`,
+                  { duration: 5000, closeButton: true }
+                );
+              });
               
             } catch (error) {
               console.error("Error parsing stored problems:", error);
