@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useUser } from "@clerk/clerk-react";
 import { toast } from "sonner";
@@ -10,34 +9,30 @@ export const useProblems = () => {
   const { user } = useUser();
   const [lastCheckedTime, setLastCheckedTime] = useState<string | null>(null);
 
-  useEffect(() => {
-    // Load or initialize the last checked time from localStorage
-    const storedLastCheckedTime = localStorage.getItem('lastProblemStatusCheck');
-    if (storedLastCheckedTime) {
-      setLastCheckedTime(storedLastCheckedTime);
-    } else {
-      const currentTime = new Date().toISOString();
-      localStorage.setItem('lastProblemStatusCheck', currentTime);
-      setLastCheckedTime(currentTime);
-    }
-  }, []);
+  // Load or initialize the last checked time from localStorage
+  const storedLastCheckedTime = localStorage.getItem('lastProblemStatusCheck');
+  if (storedLastCheckedTime) {
+    setLastCheckedTime(storedLastCheckedTime);
+  } else {
+    const currentTime = new Date().toISOString();
+    localStorage.setItem('lastProblemStatusCheck', currentTime);
+    setLastCheckedTime(currentTime);
+  }
 
   useEffect(() => {
-    // Only fetch problems if user is available
     if (!user) {
       console.log("User not available, skipping problem fetch");
       setIsLoading(false);
       return;
     }
     
-    // Fetch problems
     const fetchProblems = async () => {
       setIsLoading(true);
       try {
-        // Mock data for problems
+        // Mock data with unique IDs starting from 1000 to avoid conflicts
         const mockProblems = [
           {
-            id: 1,
+            id: 1001,
             title: "Water Supply Issue in Sector 4",
             category: "water",
             description: "There has been no water supply in our area for the last 3 days.",
@@ -48,7 +43,7 @@ export const useProblems = () => {
             location: "Sector 4",
           },
           {
-            id: 2,
+            id: 1002,
             title: "Street Light Not Working",
             category: "electricity",
             description: "The street light near the main temple has not been working for a week.",
@@ -59,7 +54,7 @@ export const useProblems = () => {
             location: "Main Temple Road",
           },
           {
-            id: 3,
+            id: 1003,
             title: "Garbage Collection",
             category: "sanitation",
             description: "Garbage has not been collected from our area for the past week.",
@@ -72,47 +67,27 @@ export const useProblems = () => {
         ];
         
         setTimeout(() => {
-          // Get problems from localStorage if any exist
           const storedProblems = localStorage.getItem('submittedProblems');
           let allProblems: Problem[] = [];
           
           if (storedProblems) {
             try {
               const parsedProblems = JSON.parse(storedProblems);
+              console.log("Parsing stored problems:", parsedProblems);
               
-              console.log("Current user email:", user?.primaryEmailAddress?.emailAddress);
-              console.log("Current user ID:", user?.id);
-              console.log("All stored problems:", parsedProblems.length);
-              
-              // Enhanced filtering to properly check for user's problems
+              // Enhanced filtering with unique IDs
               const userProblems = parsedProblems.filter((p: Problem) => {
-                // Log each problem to debug
-                console.log("Checking problem:", p.id, "userId:", p.userId, "userEmail:", p.userEmail);
-                
-                // If the problem has no user identification, show it
-                if (!p.userId && !p.userEmail) {
-                  return true;
-                }
-                
-                // If user ID matches, show it
-                if (p.userId && user?.id && p.userId === user.id) {
-                  console.log("Match by ID:", p.id);
-                  return true;
-                }
-                
-                // If user email matches, show it
-                if (p.userEmail && user?.primaryEmailAddress?.emailAddress && 
-                    p.userEmail.toLowerCase() === user.primaryEmailAddress.emailAddress.toLowerCase()) {
-                  console.log("Match by email:", p.id);
-                  return true;
-                }
-                
-                return false;
-              });
+                console.log("Checking problem:", p);
+                return (!p.userId && !p.userEmail) ||
+                       (p.userId && user?.id && p.userId === user.id) ||
+                       (p.userEmail && user?.primaryEmailAddress?.emailAddress && 
+                        p.userEmail.toLowerCase() === user.primaryEmailAddress.emailAddress.toLowerCase());
+              }).map((p: Problem, index: number) => ({
+                ...p,
+                id: 2000 + index // Ensure unique IDs for user problems starting from 2000
+              }));
               
               console.log("Found user problems:", userProblems.length);
-              
-              // Use both mock problems and user problems
               allProblems = [...mockProblems, ...userProblems];
               
               // Check for status updates since last check
@@ -144,13 +119,13 @@ export const useProblems = () => {
                   );
                 });
               }
+              
             } catch (error) {
               console.error("Error parsing stored problems:", error);
               toast.error("There was an error loading your problems");
               allProblems = [...mockProblems];
             }
           } else {
-            // If no stored problems, use mock data
             console.log("No stored problems found, using mock data");
             allProblems = [...mockProblems];
           }
@@ -160,6 +135,7 @@ export const useProblems = () => {
           localStorage.setItem('lastProblemStatusCheck', currentTime);
           setLastCheckedTime(currentTime);
           
+          console.log("Setting final problems:", allProblems);
           setProblems(allProblems);
           setIsLoading(false);
         }, 800);
