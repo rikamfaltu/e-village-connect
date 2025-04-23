@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
@@ -15,6 +14,7 @@ const AddProblem = () => {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
@@ -59,19 +59,51 @@ const AddProblem = () => {
         const fileName = `${uuidv4()}.${fileExt}`;
         const filePath = `${user?.id || 'anonymous'}/${fileName}`;
         
-        const { error: uploadError } = await supabase.storage
+        console.log("Attempting to upload file to path:", filePath);
+        console.log("File size:", selectedFile.size);
+        console.log("File type:", selectedFile.type);
+        
+        // Check if bucket exists first and log it
+        const { data: buckets, error: bucketsError } = await supabase
+          .storage
+          .listBuckets();
+          
+        if (bucketsError) {
+          console.error("Error checking buckets:", bucketsError);
+          toast.error("Error checking storage buckets");
+        } else {
+          console.log("Available buckets:", buckets.map(b => b.name));
+        }
+        
+        // Upload with progress monitoring
+        const { data: uploadData, error: uploadError } = await supabase.storage
           .from('problem_images')
-          .upload(filePath, selectedFile);
+          .upload(filePath, selectedFile, {
+            cacheControl: '3600',
+            upsert: false,
+            onUploadProgress: (progress) => {
+              console.log(`Upload progress: ${progress.percent}%`);
+              setUploadProgress(Math.round(progress.percent));
+            }
+          });
         
         if (uploadError) {
           console.error("Image upload error:", uploadError);
-          toast.error("Failed to upload image. Please try again.");
+          toast.error(`Failed to upload image: ${uploadError.message}`);
           setIsSubmitting(false);
           return;
         }
         
         imagePath = filePath;
         console.log("Image uploaded successfully at path:", imagePath);
+        
+        // Verify the uploaded file exists
+        const { data: fileData } = await supabase
+          .storage
+          .from('problem_images')
+          .getPublicUrl(filePath);
+          
+        console.log("Public URL for uploaded image:", fileData.publicUrl);
       }
       
       // Create problem record in Supabase
@@ -94,7 +126,7 @@ const AddProblem = () => {
       
       if (error) {
         console.error("Problem submission error:", error);
-        toast.error("Failed to submit your problem. Please try again.");
+        toast.error(`Failed to submit your problem: ${error.message}`);
         setIsSubmitting(false);
         return;
       }
@@ -111,10 +143,11 @@ const AddProblem = () => {
       reset();
       setSelectedFile(null);
       setPreviewUrl(null);
+      setUploadProgress(0);
       
-    } catch (error) {
+    } catch (error: any) {
       console.error("Unexpected error submitting problem:", error);
-      toast.error("An unexpected error occurred. Please try again later.");
+      toast.error(`An unexpected error occurred: ${error.message || "Please try again later"}`);
     } finally {
       setIsSubmitting(false);
     }
@@ -229,6 +262,14 @@ const AddProblem = () => {
                       >
                         <X className="w-4 h-4" />
                       </button>
+                      {uploadProgress > 0 && uploadProgress < 100 && (
+                        <div className="w-full bg-gray-200 rounded-full h-2.5 mt-2">
+                          <div 
+                            className="bg-primary h-2.5 rounded-full" 
+                            style={{width: `${uploadProgress}%`}}
+                          ></div>
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>
