@@ -13,3 +13,12 @@ export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABL
 
 // Add debug logs to check if supabase client is initialized correctly
 console.log("Supabase client initialized:", !!supabase);
+
+// Log storage bucket information for debugging
+supabase.storage.listBuckets().then((response) => {
+  if (response.error) {
+    console.error("Error listing buckets:", response.error);
+  } else {
+    console.log("Available storage buckets:", response.data);
+  }
+});

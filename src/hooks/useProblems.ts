@@ -11,8 +11,8 @@ export const useProblems = () => {
   const { user } = useUser();
   const [lastCheckedTime, setLastCheckedTime] = useState<string | null>(null);
 
+  // Load last checked time on initialization
   useEffect(() => {
-    // Load or initialize the last checked time from localStorage - moved inside useEffect
     const storedLastCheckedTime = localStorage.getItem('lastProblemStatusCheck');
     if (storedLastCheckedTime) {
       setLastCheckedTime(storedLastCheckedTime);
@@ -21,23 +21,26 @@ export const useProblems = () => {
       localStorage.setItem('lastProblemStatusCheck', currentTime);
       setLastCheckedTime(currentTime);
     }
-  }, []); // Empty dependency array means this runs once on mount
+  }, []);
 
+  // Fetch problems when component mounts and whenever user or lastCheckedTime changes
   useEffect(() => {
     if (!user) {
       console.log("User not available, skipping problem fetch");
       setIsLoading(false);
       return;
     }
-    
-    // Only fetch problems when user and lastCheckedTime are available
+
+    // Only fetch problems when lastCheckedTime is available
     if (lastCheckedTime === null) {
-      return; // Wait until lastCheckedTime is initialized
+      return;
     }
-    
+
     const fetchProblems = async () => {
       setIsLoading(true);
       try {
+        console.log("Fetching problems for user:", user.id);
+        
         // Fetch problems from Supabase
         const { data: supabaseProblems, error } = await supabase
           .from('problems')
@@ -48,9 +51,11 @@ export const useProblems = () => {
           throw error;
         }
         
+        console.log("Fetched problems from Supabase:", supabaseProblems);
+        
         // Transform Supabase data to match our Problem type
         const transformedProblems: Problem[] = supabaseProblems.map((problem) => ({
-          id: parseInt(problem.id.split('-')[0], 16), // Convert UUID to number for compatibility
+          id: parseInt(problem.id.split('-')[0], 16) || Math.floor(Math.random() * 10000), // Ensure ID is always valid
           title: problem.title,
           category: problem.category,
           description: problem.description,
@@ -66,7 +71,7 @@ export const useProblems = () => {
           urgency: problem.urgency
         }));
 
-        // Mock data for demo purposes - this will be shown alongside real data
+        // Mock data for demo purposes
         const mockProblems = [
           {
             id: 1001,
@@ -105,6 +110,7 @@ export const useProblems = () => {
         
         // Combine mock data with real data
         const allProblems = [...mockProblems, ...transformedProblems];
+        console.log("Combined problems data:", allProblems);
         
         // Check for status updates since last check
         const updatedProblems = allProblems.filter(
@@ -139,12 +145,12 @@ export const useProblems = () => {
         localStorage.setItem('lastProblemStatusCheck', currentTime);
         setLastCheckedTime(currentTime);
         
-        console.log("Setting problems:", allProblems);
+        // Save problems to state
         setProblems(allProblems);
-        setIsLoading(false);
       } catch (error) {
         console.error("Error fetching problems:", error);
         toast.error("Failed to load your problems");
+      } finally {
         setIsLoading(false);
       }
     };
