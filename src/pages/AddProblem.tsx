@@ -1,3 +1,4 @@
+
 import React, { useState } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
@@ -63,7 +64,7 @@ const AddProblem = () => {
         console.log("File size:", selectedFile.size);
         console.log("File type:", selectedFile.type);
         
-        // Check if bucket exists first and log it
+        // First check if the bucket exists
         const { data: buckets, error: bucketsError } = await supabase
           .storage
           .listBuckets();
@@ -73,14 +74,38 @@ const AddProblem = () => {
           toast.error("Error checking storage buckets");
         } else {
           console.log("Available buckets:", buckets.map(b => b.name));
+          
+          // If problem_images bucket doesn't exist, try to create it
+          if (!buckets.some(b => b.name === 'problem_images')) {
+            const { error: createError } = await supabase.storage.createBucket('problem_images', {
+              public: true,
+              fileSizeLimit: 5242880 // 5MB
+            });
+            
+            if (createError) {
+              console.error("Error creating bucket:", createError);
+              toast.error("Error creating storage bucket");
+              setIsSubmitting(false);
+              return;
+            }
+          }
         }
         
-        // Upload file - removed progress tracking as it's not supported in the current type
+        // Set bucket to public if it isn't already
+        const { error: policyError } = await supabase.storage.from('problem_images').updateBucket({
+          public: true
+        });
+        
+        if (policyError) {
+          console.error("Error updating bucket policy:", policyError);
+        }
+        
+        // Upload file - standard upload without progress tracking
         const { data: uploadData, error: uploadError } = await supabase.storage
           .from('problem_images')
           .upload(filePath, selectedFile, {
             cacheControl: '3600',
-            upsert: false
+            upsert: true // Changed to true to allow overwriting
           });
         
         if (uploadError) {

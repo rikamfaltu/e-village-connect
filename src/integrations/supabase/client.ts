@@ -14,11 +14,50 @@ export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABL
 // Add debug logs to check if supabase client is initialized correctly
 console.log("Supabase client initialized:", !!supabase);
 
-// Log storage bucket information for debugging
+// Check if problem_images bucket exists and create it if needed
 supabase.storage.listBuckets().then((response) => {
   if (response.error) {
     console.error("Error listing buckets:", response.error);
   } else {
     console.log("Available storage buckets:", response.data);
+    
+    // Check if problem_images bucket exists
+    const problemImagesBucket = response.data.find(bucket => bucket.name === 'problem_images');
+    
+    if (!problemImagesBucket) {
+      console.log("Creating problem_images bucket...");
+      supabase.storage.createBucket('problem_images', {
+        public: true, // Make the bucket public
+        fileSizeLimit: 5242880 // 5MB in bytes
+      }).then(createResponse => {
+        if (createResponse.error) {
+          console.error("Error creating problem_images bucket:", createResponse.error);
+        } else {
+          console.log("problem_images bucket created successfully");
+        }
+      });
+    } else {
+      console.log("problem_images bucket already exists");
+    }
   }
 });
+
+// Update bucket policy to allow public access for anonymous users if needed
+const updateBucketPolicy = async () => {
+  try {
+    const { error } = await supabase.storage.from('problem_images').updateBucket({
+      public: true
+    });
+    
+    if (error) {
+      console.error("Error updating bucket policy:", error);
+    } else {
+      console.log("Bucket policy updated successfully to public");
+    }
+  } catch (err) {
+    console.error("Unexpected error updating bucket policy:", err);
+  }
+};
+
+// Try to update the bucket policy (will only work if the bucket exists)
+updateBucketPolicy();

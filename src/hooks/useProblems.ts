@@ -23,23 +23,12 @@ export const useProblems = () => {
     }
   }, []);
 
-  // Fetch problems when component mounts and whenever user or lastCheckedTime changes
+  // Fetch problems when component mounts and whenever user changes
   useEffect(() => {
-    if (!user) {
-      console.log("User not available, skipping problem fetch");
-      setIsLoading(false);
-      return;
-    }
-
-    // Only fetch problems when lastCheckedTime is available
-    if (lastCheckedTime === null) {
-      return;
-    }
-
     const fetchProblems = async () => {
       setIsLoading(true);
       try {
-        console.log("Fetching problems for user:", user.id);
+        console.log("Fetching problems...");
         
         // Fetch problems from Supabase
         const { data: supabaseProblems, error } = await supabase
@@ -54,22 +43,31 @@ export const useProblems = () => {
         console.log("Fetched problems from Supabase:", supabaseProblems);
         
         // Transform Supabase data to match our Problem type
-        const transformedProblems: Problem[] = supabaseProblems.map((problem) => ({
-          id: parseInt(problem.id.split('-')[0], 16) || Math.floor(Math.random() * 10000), // Ensure ID is always valid
-          title: problem.title,
-          category: problem.category,
-          description: problem.description,
-          status: problem.status as "pending" | "in_progress" | "resolved" | "rejected",
-          createdAt: problem.created_at,
-          statusUpdateTime: problem.status_update_time,
-          location: problem.location,
-          image: problem.image_path ? `${supabase.storage.from('problem_images').getPublicUrl(problem.image_path).data.publicUrl}` : null,
-          userId: problem.user_id,
-          userEmail: problem.user_email,
-          userName: problem.user_name,
-          contactNumber: problem.contact_number,
-          urgency: problem.urgency
-        }));
+        const transformedProblems: Problem[] = supabaseProblems.map((problem) => {
+          // Ensure we have a valid ID - UUIDs can't directly be parsed as integers
+          const id = problem.id ? 
+            parseInt(problem.id.split('-')[0], 16) || Math.floor(Math.random() * 10000) : 
+            Math.floor(Math.random() * 10000);
+            
+          return {
+            id,
+            title: problem.title,
+            category: problem.category,
+            description: problem.description,
+            status: problem.status as "pending" | "in_progress" | "resolved" | "rejected",
+            createdAt: problem.created_at,
+            statusUpdateTime: problem.status_update_time,
+            location: problem.location,
+            image: problem.image_path ? 
+              `${supabase.storage.from('problem_images').getPublicUrl(problem.image_path).data.publicUrl}` : 
+              null,
+            userId: problem.user_id,
+            userEmail: problem.user_email,
+            userName: problem.user_name,
+            contactNumber: problem.contact_number,
+            urgency: problem.urgency
+          };
+        });
 
         // Mock data for demo purposes
         const mockProblems = [
@@ -113,32 +111,34 @@ export const useProblems = () => {
         console.log("Combined problems data:", allProblems);
         
         // Check for status updates since last check
-        const updatedProblems = allProblems.filter(
-          (p) => p.statusUpdateTime && new Date(p.statusUpdateTime) > new Date(lastCheckedTime || '')
-        );
-        
-        // Notify user of any status updates
-        updatedProblems.forEach(problem => {
-          let statusMessage = "";
-          switch(problem.status) {
-            case "resolved":
-              statusMessage = "has been resolved";
-              break;
-            case "in_progress":
-              statusMessage = "is now being addressed";
-              break;
-            case "rejected":
-              statusMessage = "has been rejected";
-              break;
-            default:
-              statusMessage = "has been updated to " + problem.status;
-          }
-          
-          toast.info(
-            `Your problem "${problem.title}" ${statusMessage}`,
-            { duration: 5000, closeButton: true }
+        if (lastCheckedTime) {
+          const updatedProblems = allProblems.filter(
+            (p) => p.statusUpdateTime && new Date(p.statusUpdateTime) > new Date(lastCheckedTime)
           );
-        });
+          
+          // Notify user of any status updates
+          updatedProblems.forEach(problem => {
+            let statusMessage = "";
+            switch(problem.status) {
+              case "resolved":
+                statusMessage = "has been resolved";
+                break;
+              case "in_progress":
+                statusMessage = "is now being addressed";
+                break;
+              case "rejected":
+                statusMessage = "has been rejected";
+                break;
+              default:
+                statusMessage = "has been updated to " + problem.status;
+            }
+            
+            toast.info(
+              `Your problem "${problem.title}" ${statusMessage}`,
+              { duration: 5000, closeButton: true }
+            );
+          });
+        }
         
         // Update the last checked time
         const currentTime = new Date().toISOString();
@@ -155,8 +155,9 @@ export const useProblems = () => {
       }
     };
 
+    // Always fetch problems on mount or when user changes
     fetchProblems();
-  }, [user, lastCheckedTime]);
+  }, [user]); // Removed lastCheckedTime dependency to prevent infinite fetching
 
   return { problems, isLoading };
 };
