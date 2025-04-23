@@ -1,3 +1,4 @@
+
 import React, { useState } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
@@ -75,13 +76,13 @@ const AddProblem = () => {
           console.log("Available buckets:", buckets.map(b => b.name));
         }
         
-        // Upload with progress monitoring
+        // Upload with progress monitoring - using onProgress instead of onUploadProgress
         const { data: uploadData, error: uploadError } = await supabase.storage
           .from('problem_images')
           .upload(filePath, selectedFile, {
             cacheControl: '3600',
             upsert: false,
-            onUploadProgress: (progress) => {
+            onProgress: (progress) => {
               console.log(`Upload progress: ${progress.percent}%`);
               setUploadProgress(Math.round(progress.percent));
             }
