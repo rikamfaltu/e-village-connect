@@ -43,6 +43,9 @@ const AddProblem = () => {
   };
 
   const onSubmit = async (data: any) => {
+    // Prevent multiple submissions
+    if (isSubmitting) return;
+
     setIsSubmitting(true);
     console.log("Form data:", data);
     console.log("Current user:", user?.id, user?.primaryEmailAddress?.emailAddress);
@@ -61,7 +64,10 @@ const AddProblem = () => {
           .upload(filePath, selectedFile);
         
         if (uploadError) {
-          throw uploadError;
+          console.error("Image upload error:", uploadError);
+          toast.error("Failed to upload image. Please try again.");
+          setIsSubmitting(false);
+          return;
         }
         
         imagePath = filePath;
@@ -87,7 +93,10 @@ const AddProblem = () => {
         .select();
       
       if (error) {
-        throw error;
+        console.error("Problem submission error:", error);
+        toast.error("Failed to submit your problem. Please try again.");
+        setIsSubmitting(false);
+        return;
       }
       
       console.log("Problem submitted successfully:", newProblem);
@@ -104,8 +113,8 @@ const AddProblem = () => {
       setPreviewUrl(null);
       
     } catch (error) {
-      console.error("Error submitting problem:", error);
-      toast.error("Failed to submit your problem. Please try again.");
+      console.error("Unexpected error submitting problem:", error);
+      toast.error("An unexpected error occurred. Please try again later.");
     } finally {
       setIsSubmitting(false);
     }
